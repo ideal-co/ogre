@@ -26,9 +26,11 @@ help:
 	@echo
 
 build:
-	@echo "building ${BIN_NAME} ${VERSION}"
-	@echo "GOPATH=${GOPATH}"
-	go build -ldflags "-X github.com/lowellmower/ogre/version.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X github.com/lowellmower/ogre/version.BuildDate=${BUILD_DATE}" -o bin/${BIN_NAME}
+	go build -o ./bin/ ./cmd/ogred/
+	go build -o ./bin/ ./cmd/ogre/
+#	@echo "building ${BIN_NAME} ${VERSION}"
+#	@echo "GOPATH=${GOPATH}"
+#	go build -ldflags "-X github.com/lowellmower/ogre/version.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X github.com/lowellmower/ogre/version.BuildDate=${BUILD_DATE}" -o bin/${BIN_NAME}
 
 get-deps:
 	dep ensure

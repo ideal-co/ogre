@@ -13,7 +13,7 @@ const (
 
     // bin
     HostBinDir = "/usr/local/bin/"
-    AppBinDir = "cmd/"
+    AppBinDir = "bin/"
 )
 
 // Default config files
@@ -24,7 +24,7 @@ const (
 
 // Default executable file paths
 const (
-    OgredBin = "ogred/ogred"
+    OgredBin = "ogred"
 )
 
 // misc
