@@ -1,7 +1,7 @@
-
+# # #                                             # # #
+# To get started, run make help from the project root #
+# # #                                             # # #
 .PHONY: build build-alpine clean test help default
-
-
 
 BIN_NAME=ogre
 
@@ -10,8 +10,6 @@ GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 BUILD_DATE=$(shell date '+%Y-%m-%d-%H:%M:%S')
 IMAGE_NAME := "lowellmower/ogre"
-
-default: test
 
 help:
 	@echo 'Management commands for ogre:'
@@ -61,4 +59,3 @@ clean:
 
 test:
 	go test ./...
-

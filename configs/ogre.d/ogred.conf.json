@@ -1,0 +1,9 @@
+{
+  "ogred_socket": "/var/run/ogred.sock",
+  "ogred_pid": "/etc/ogre/ogred.pid",
+  "log": {
+    "level": "trace",
+    "file": "/var/log/ogred.log",
+    "silent": false
+  }
+}
