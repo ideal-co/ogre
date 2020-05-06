@@ -8,10 +8,12 @@ import (
 )
 
 var Daemon = &venom.Venom{}
+var Service = &venom.Venom{}
 
 func init() {
 	writeDefaultConfig()
 	Daemon = readConfig(install.HostConfigDir + install.OgredConfig)
+	Service = readConfig(install.HostConfigDir + install.ServiceConfig)
 }
 
 func writeDefaultConfig() {

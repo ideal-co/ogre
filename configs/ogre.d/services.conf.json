@@ -1,0 +1,8 @@
+{
+  "log": {
+    "level": "trace",
+    "file": "/var/log/service.log",
+    "silent": false,
+    "report_caller": false
+  }
+}

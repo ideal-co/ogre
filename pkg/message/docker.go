@@ -3,7 +3,6 @@ package msg
 import (
     "encoding/json"
     "github.com/docker/docker/api/types/events"
-    "github.com/lowellmower/ogre/pkg/log"
 )
 
 type DockerMessage struct {
@@ -31,12 +30,10 @@ func (dm DockerMessage) Serialize() ([]byte, error) {
 }
 
 func (dm DockerMessage) Deserialize(data []byte) (Message, error) {
-    log.Daemon.Tracef("DATA: %s", string(data))
     err := json.Unmarshal(data, &dm)
     if err != nil {
         return nil, err
     }
-    log.Daemon.Tracef("DM: %+v", dm)
     return dm, nil
 }
 

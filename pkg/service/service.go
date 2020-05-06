@@ -16,7 +16,6 @@ const (
 // Service is the interface which all services will implement.
 type Service interface {
 	Type() ServiceType
-	//Read(io.Reader) (msg.Message, error)
 	Start() error
 	Stop() error
 }

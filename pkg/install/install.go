@@ -20,6 +20,7 @@ const (
 const (
     DockerConfig = "docker.conf.json"
     OgredConfig = "ogred.conf.json"
+    ServiceConfig = "services.conf.json"
 )
 
 // Default executable file paths

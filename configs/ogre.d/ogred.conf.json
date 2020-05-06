@@ -4,6 +4,7 @@
   "log": {
     "level": "trace",
     "file": "/var/log/ogred.log",
-    "silent": false
+    "silent": false,
+    "report_caller": false
   }
 }

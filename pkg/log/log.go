@@ -5,8 +5,8 @@ import (
 	"github.com/moogar0880/venom"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/lowellmower/ogre/pkg/config"
+	"github.com/sirupsen/logrus"
 )
 
 // Logger defines a set of methods for writing application logs. Derived from and
@@ -40,12 +40,16 @@ type Logger interface {
 
 // global log for the daemon
 var Daemon *logrus.Logger
+var Service *logrus.Logger
 
 // init sets up our loggers for our application. As the application expands, we
 // ideally want to be able to isolate logs and should make a logging mechanism
 // per service or properly structure the daemon log to isolate parts of logs.
 func init() {
 	Daemon = newLogrusLogger(config.Daemon)
+	fmt.Printf("Logging ogred at level: %s\n", Daemon.Level.String())
+	Service = newLogrusLogger(config.Service)
+	fmt.Printf("Logging services at level: %s\n", Service.Level.String())
 }
 
 // newLogrusLogger takes a pointer to a venom config and returns a pointer to an
@@ -69,9 +73,6 @@ func newLogrusLogger(cfg *venom.Venom) *logrus.Logger {
 		l.Out = os.Stdout
 	}
 
-	lvl := cfg.GetString("log.level")
-	fmt.Println("LOG LEVEL: ", lvl)
-
 	switch cfg.GetString("log.level") {
 	case "info":
 		l.Level = logrus.InfoLevel
@@ -85,6 +86,7 @@ func newLogrusLogger(cfg *venom.Venom) *logrus.Logger {
 		l.Level = logrus.DebugLevel
 	}
 
+	l.ReportCaller = cfg.GetBool("log.report_caller")
 	return l
 }
 
