@@ -1,18 +1,21 @@
-# ogre
+# Ogre
 
-Simplified monitoring for Docker containers
+Simplified health monitoring and telemetry for Docker containers in modern day
+distributed systems.
 
-## Getting started
+## Getting Started
 
-This project requires Go to be installed. On OS X with Homebrew you can just run `brew install go`.
-
-Running it then should be as simple as:
-
+Ensure you have Go installed. Running Ogre then should be as simple as:
 ```console
-$ make
+$ make build
 $ ./bin/ogre
 ```
 
 ### Testing
 
 ``make test``
+
+### Documentation
+
+Local docs can be found under the [docs/README.md](./docs/README.md) which will
+also be in sync with the [hosted docs here](https://lowellmower.com/1/01/ogre-doc/).
