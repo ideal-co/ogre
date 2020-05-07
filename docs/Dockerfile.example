@@ -1,0 +1,46 @@
+FROM alpine
+
+# if the command is to be run internal to the container, the label immediately
+# following 'health' must be 'in'
+LABEL ogre.health.in.unique.check.one="nc -vz 127.0.0.1 8000"
+
+# if the command is to be run external to the container, the label immediately
+# following 'health' must be 'ex' - note that if you are not running ogre on
+# the host, i.e. running in a container, the ogre container must also be part
+# of any custom network configurations you may have, if any, in order to reach
+# a container.  
+LABEL ogre.health.ex.unique.check.two="nc -vz 172.17.0.3 8000"
+
+# if neither 'in' nor 'ex' is present, ogre will attempt to make the check from
+# inside the container
+LABEL ogre.health.unique.check.three="echo inside"
+
+# space separated values will convert to prometheus style like "metric_name" and
+# the above health checks will report like:
+#
+# metric_name{label="unique_check_one"} 0
+# metric_name{label="unique_check_two"} 1
+# metric_name{label="unique_check_one"} 0 
+LABEL ogre.format.prometheus.metric.name="metric name"
+
+# if ogre is configured to send directly to a prometheus server, you can include
+# a job name which will convert spaces to underscores. If no job name is provided
+# then ogre will attempt to send under the job name 'ogre'
+LABEL ogre.format.prometheus.job.name="job name"
+
+# if you could like to collect the output of healthchecks and send that value you
+# can format the health checks like below
+#
+# (collect output from the command as a string)
+# LABEL ogre.format.health.output.string
+#
+# (collect output from the command as an int)
+# LABEL ogre.format.health.output.int
+#
+# (collect output from the command as a float)
+# LABEL ogre.format.health.output.float
+# 
+# other options include exit code (default)
+# LABEL ogre.format.health.output.exit
+
+ENTRYPOINT ["nc", "-lke", "127.0.0.1", "8000"]
