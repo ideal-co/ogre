@@ -32,15 +32,23 @@ LABEL ogre.format.prometheus.job.name="job name"
 # can format the health checks like below
 #
 # (collect output from the command as a string)
-# LABEL ogre.format.health.output.string
+LABEL ogre.format.health.outpu.typet="string"
 #
 # (collect output from the command as an int)
-# LABEL ogre.format.health.output.int
+# LABEL ogre.format.health.output.type="int"
 #
 # (collect output from the command as a float)
-# LABEL ogre.format.health.output.float
-# 
-# other options include exit code (default)
-# LABEL ogre.format.health.output.exit
+# LABEL ogre.format.health.output.type="float"
+
+
+# inform ogre to collect the exit code of health checks (default)
+LABEL ogre.format.health.output.result="exit"
+
+# inform ogre to collect the return of the command itself, i.e. if you had a
+# check like `ls /proc | wc -l` 
+# LABEL ogre.format.health.output.result="return"
+
+# the interval at which checks should be run
+LABEL ogre.format.health.interval="5s"
 
 ENTRYPOINT ["nc", "-lke", "127.0.0.1", "8000"]
