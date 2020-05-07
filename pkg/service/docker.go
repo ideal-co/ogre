@@ -5,6 +5,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
+	"github.com/lowellmower/ogre/pkg/health"
 	"github.com/lowellmower/ogre/pkg/log"
 	msg "github.com/lowellmower/ogre/pkg/message"
 )
@@ -30,11 +31,22 @@ type DockerAPIClient interface {
 // services and user input communicate with the Daemon.
 type DockerService struct {
 	Client DockerAPIClient
+	Containers []*Container
 
 	ctx *Context
 	in chan msg.Message
 	out chan msg.Message
 	err chan msg.Message
+}
+
+// Container is the struct representation of a Docker container on the host the
+// docker daemon ogre is communicating with is running. It encapsulates the list
+// of HealthChecks to execute.
+type Container struct {
+	Name string
+	ID string
+	Info types.ContainerJSON
+	HealthChecks []*health.HealthCheck
 }
 
 // NewDockerService takes a chan of msg.Message and a pointer to a Context, both
@@ -151,6 +163,9 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				// introduced in docker v1.12 (2016)
 				case "health_status":
+					// TODO (lmower): need to decide what to do on any health status event recieved
+					//                which will only happen on state changes if the HEATHCHECK stanza
+					//                is provided in a Dockerfile
 					log.Service.WithField("service", Docker).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				}
