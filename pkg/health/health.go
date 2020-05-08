@@ -9,5 +9,5 @@ type HealthCheck interface {
 }
 
 type HealthCheckFormatter interface {
-    Parse(map[string]string) HealthCheck
+    Parse(map[string]string) []HealthCheck
 }
