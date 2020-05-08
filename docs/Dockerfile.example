@@ -32,7 +32,7 @@ LABEL ogre.format.prometheus.job.name="job name"
 # can format the health checks like below
 #
 # (collect output from the command as a string)
-LABEL ogre.format.health.outpu.typet="string"
+LABEL ogre.format.health.output.type="string"
 #
 # (collect output from the command as an int)
 # LABEL ogre.format.health.output.type="int"
