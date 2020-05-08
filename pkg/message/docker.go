@@ -3,11 +3,13 @@ package msg
 import (
     "encoding/json"
     "github.com/docker/docker/api/types/events"
+    "github.com/lowellmower/ogre/pkg/health"
 )
 
 type DockerMessage struct {
     Event events.Message `json:"event,omitempty"`
     Actor events.Actor `json:"actor,omitempty"`
+    Health health.HealthCheck `json:"health,omitempty"`
 
     Action string `json:"action"`
     Err error `json:"err,omitempty"`
