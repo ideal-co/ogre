@@ -4,10 +4,12 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/lowellmower/ogre/pkg/health"
 	"github.com/lowellmower/ogre/pkg/log"
 	msg "github.com/lowellmower/ogre/pkg/message"
+	"time"
 )
 
 // DockerAPIClient is an interface which wraps a subset of a number of the
@@ -46,26 +48,7 @@ type Container struct {
 	Name string
 	ID string
 	Info types.ContainerJSON
-	HealthChecks []*health.HealthCheck
-}
-
-// NewDockerService takes a chan of msg.Message and a pointer to a Context, both
-// of which are associated with the Daemon. The out channel passed corresponds
-// to the Daemon.In channel and is used to send information back to the daemon
-// to routing.
-func NewDockerService(out, in, err chan msg.Message) (*DockerService, error) {
-	dockerClient, e := client.NewEnvClient()
-	if e != nil {
-		return nil, e
-	}
-
-	return &DockerService{
-		Client: dockerClient,
-		ctx: NewDefaultContext(),
-		in: in,
-		out: out,
-		err: err,
-	}, nil
+	HealthChecks []health.HealthCheck
 }
 
 // Type satisfies the Service.Type interface and returns a ServiceType of Docker
@@ -99,18 +82,81 @@ func (ds *DockerService) Stop() error {
 	return nil
 }
 
+// NewDockerService takes a chan of msg.Message and a pointer to a Context, both
+// of which are associated with the Daemon. The out channel passed corresponds
+// to the Daemon.In channel and is used to send information back to the daemon
+// to routing.
+func NewDockerService(out, in, errChan chan msg.Message) (*DockerService, error) {
+	dockerClient, err := client.NewEnvClient()
+	if err != nil {
+		return nil, err
+	}
+
+	ds := &DockerService{
+		Client: dockerClient,
+		ctx: NewDefaultContext(),
+		in: in,
+		out: out,
+		err: errChan,
+	}
+
+	ds.Containers, err = ds.CollectContainers()
+	if err != nil {
+		return nil, err
+	}
+
+	return ds, nil
+}
+
+func NewContainer(info types.ContainerJSON) *Container {
+	// parse label info
+	heathChecks := health.NewDockerHealthCheck(info.Config.Labels)
+
+	// instantiate container
+	return &Container{Info: info, HealthChecks: heathChecks}
+}
+
+func (ds *DockerService) CollectContainers()([]*Container, error){
+	var cList []*Container
+	arg, _ := filters.FromParam("status=running")
+	opts := types.ContainerListOptions{Filters: arg}
+
+	// gather running containers
+	containers, err := ds.Client.ContainerList(ds.ctx.Ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// gather info on containers
+	for _, c := range containers {
+		info, err := ds.Client.ContainerInspect(ds.ctx.Ctx, c.ID)
+		if err != nil {
+			log.Service.WithField("service", Docker).Errorf("could not get info for %s: %s", c.ID, err)
+			continue
+		}
+
+		cList = append(cList, NewContainer(info))
+	}
+
+	return cList, nil
+}
+
 // listen is called by the Start() method and will begin a loop to listen for
 // any msg.Message passed over it's 'in' channel. This channel is the means by
 // which the daemon can send signals recieved from user input to the service.
 func (ds *DockerService) listen() {
 	signal := make(chan struct{})
 	go ds.listenDockerAPI(signal)
+	go ds.listenHealthChecks()
 	defer close(signal)
 	for {
 		select {
 		case m := <-ds.in:
+			dm := m.(msg.DockerMessage)
 			log.Service.WithField("service", Docker).Tracef("docker listen got %+v", m)
-			switch m.(msg.DockerMessage).Action {
+			switch dm.Action {
+			case "health":
+				log.Service.WithField("service", Docker).Tracef("HEALTH CHECK %+v", )
 			case "stop":
 				signal <- struct{}{}
 				ds.ctx = NewDefaultContext()
@@ -170,6 +216,38 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				}
 			}
+		}
+	}
+}
+
+func (ds *DockerService) listenHealthChecks() {
+	for _, c := range ds.Containers {
+		ds.startChecking(c)
+	}
+}
+
+func (ds *DockerService) startChecking(c *Container)  {
+	for _, chk := range c.HealthChecks {
+		go ds.startCheckLoop(c, chk)
+	}
+}
+
+func (ds *DockerService) stopChecking()  {
+}
+
+func (ds *DockerService) startCheckLoop(c *Container, chk health.HealthCheck) {
+	dhc := chk.(*health.DockerHealthCheck)
+	tick := time.NewTicker(5 * time.Second)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-ds.ctx.Done():
+			log.Service.WithField("service", Docker).Tracef("health check context stopped")
+			return
+		case <-tick.C:
+			log.Service.WithField("service", Docker).Tracef("Check: %+v, Container: %+v", dhc, c)
+			// do check
 		}
 	}
 }
