@@ -3,6 +3,7 @@ package health
 import (
     "context"
     "github.com/lowellmower/ogre/pkg/backend"
+    "github.com/lowellmower/ogre/pkg/log"
     "os/exec"
     "strings"
     "sync"
@@ -10,7 +11,7 @@ import (
 )
 
 // DockerHealthCheck satisfies the HeathCheck interface and encapsulates the
-// behaviors for issuing healthchecks in or against docker containers
+// behaviors for issuing health checks in or against docker containers
 type DockerHealthCheck struct {
     Name string
     // the command to be run
@@ -36,7 +37,7 @@ type DockerHealthCheck struct {
 
 type DockerFormatter struct {
     Output FormatOutput
-    Interval string
+    Interval time.Duration
 
     Backend backend.Platform
     BackendLabels map[string]string
@@ -87,7 +88,6 @@ func NewDockerHealthCheck(labels map[string]string) []*DockerHealthCheck {
 }
 
 func newFormatterFromLabels(labels map[string]string) *DockerFormatter {
-    //var f *DockerFormatter
     fmtBackendMap := make(map[string]string)
     fmtHealthMap := make(map[string]string)
 
@@ -106,6 +106,14 @@ func newFormatterFromLabels(labels map[string]string) *DockerFormatter {
         }
     }
     f := NewDockerFormatter(fmtBackendMap, fmtHealthMap)
+    if interval, ok := labels["ogre.format.health.interval"]; ok {
+        dur, err := time.ParseDuration(interval)
+        if err != nil {
+            log.Service.Errorf("could not parse time %s from label", interval)
+        }
+        f.Interval = dur
+    }
+
     return f
 }
 

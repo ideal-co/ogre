@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/lowellmower/ogre/pkg/backend"
 	"github.com/lowellmower/ogre/pkg/health"
 	"github.com/lowellmower/ogre/pkg/log"
 	msg "github.com/lowellmower/ogre/pkg/message"
@@ -34,6 +35,7 @@ type DockerAPIClient interface {
 type DockerService struct {
 	Client DockerAPIClient
 	Containers []*Container
+	Backend *backend.Platform
 
 	ctx *Context
 	in chan msg.Message
@@ -48,7 +50,7 @@ type Container struct {
 	Name string
 	ID string
 	Info types.ContainerJSON
-	HealthChecks []health.HealthCheck
+	HealthChecks []*health.DockerHealthCheck
 }
 
 // Type satisfies the Service.Type interface and returns a ServiceType of Docker
@@ -104,6 +106,9 @@ func NewDockerService(out, in, errChan chan msg.Message) (*DockerService, error)
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO (lmower): need to go through the checks collected and ensure that
+	//                all backend.PlatformTypes have platforms to accept output
 
 	return ds, nil
 }
@@ -235,9 +240,8 @@ func (ds *DockerService) startChecking(c *Container)  {
 func (ds *DockerService) stopChecking()  {
 }
 
-func (ds *DockerService) startCheckLoop(c *Container, chk health.HealthCheck) {
-	dhc := chk.(*health.DockerHealthCheck)
-	tick := time.NewTicker(5 * time.Second)
+func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCheck) {
+	tick := time.NewTicker(chk.Formatter.Interval)
 	defer tick.Stop()
 
 	for {
@@ -246,7 +250,12 @@ func (ds *DockerService) startCheckLoop(c *Container, chk health.HealthCheck) {
 			log.Service.WithField("service", Docker).Tracef("health check context stopped")
 			return
 		case <-tick.C:
-			log.Service.WithField("service", Docker).Tracef("Check: %+v, Container: %+v", dhc, c)
+			if chk.Destination == "ex" {
+				log.Service.WithField("service", Docker).Tracef("EXTERN CHECK: %+v", *chk)
+			} else {
+				log.Service.WithField("service", Docker).Tracef("INTERN CHECK: %+v", *chk)
+			}
+			//log.Service.WithField("service", Docker).Tracef("Check: %+v, Container: %+v", dhc, c)
 			// do check
 		}
 	}
