@@ -21,12 +21,12 @@ LABEL ogre.health.unique.check.three="echo inside"
 # metric_name{label="unique_check_one"} 0
 # metric_name{label="unique_check_two"} 1
 # metric_name{label="unique_check_one"} 0 
-LABEL ogre.format.prometheus.metric.name="metric name"
+LABEL ogre.format.backend.prometheus.metric="metric name"
 
 # if ogre is configured to send directly to a prometheus server, you can include
 # a job name which will convert spaces to underscores. If no job name is provided
 # then ogre will attempt to send under the job name 'ogre'
-LABEL ogre.format.prometheus.job.name="job name"
+LABEL ogre.format.backend.prometheus.job="job name"
 
 # if you could like to collect the output of healthchecks and send that value you
 # can format the health checks like below
