@@ -2,7 +2,7 @@ FROM alpine
 
 # if the command is to be run internal to the container, the label immediately
 # following 'health' must be 'in'
-LABEL ogre.health.in.unique.check.one="nc -vz 127.0.0.1 8000"
+LABEL ogre.health.in.unique.check.one="ping -c 1 127.0.0.1"
 
 # if the command is to be run external to the container, the label immediately
 # following 'health' must be 'ex' - note that if you are not running ogre on
