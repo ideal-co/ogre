@@ -16,6 +16,8 @@ type DockerHealthCheck struct {
     Name string
     // the command to be run
     Cmd *exec.Cmd
+    // the slice string representation of the command
+    RawCmd []string
 
     // context associated with the command to be run and the
     // corresponding cancel function
@@ -165,16 +167,19 @@ func parseHealthCheck(dest string, name []string, cmd string) *DockerHealthCheck
         c.Name = strings.Join(name[1:], "_")
         c.Destination = dest
         c.Cmd = getCommand(c.Ctx, cmd)
+        c.RawCmd = strings.Split(cmd, " ")
         return &c
     case externalCheck:
         c.Name = strings.Join(name[1:], "_")
         c.Destination = dest
         c.Cmd = getCommand(c.Ctx, cmd)
+        c.RawCmd = strings.Split(cmd, " ")
         return &c
     default:
         c.Name = strings.Join(name[0:], "_")
         c.Destination = "internal"
         c.Cmd = getCommand(c.Ctx, cmd)
+        c.RawCmd = strings.Split(cmd, " ")
         return &c
     }
 }
