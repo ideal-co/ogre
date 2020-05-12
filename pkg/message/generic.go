@@ -3,6 +3,7 @@ package msg
 import (
     "encoding/json"
     "fmt"
+    "github.com/lowellmower/ogre/pkg/types"
 )
 
 type GenericMessage struct {
@@ -13,12 +14,14 @@ type GenericMessage struct {
 // GenericMessage's Type implementation of the Message interface will return
 // the MessageType for the desired target service it has a message for and is
 // provided in the MType field and will default to a MessageType of msg.Daemon.
-func (gm GenericMessage) Type() MessageType {
+func (gm GenericMessage) Type() types.MessageType {
     switch gm.MType {
     case "docker":
-        return Docker
+        return types.DockerMessage
+    case "backend":
+        return types.BackendMessage
     default:
-        return Daemon
+        return types.DaemonMessage
     }
 }
 
@@ -40,10 +43,13 @@ func (gm GenericMessage) Deserialize(data []byte) (Message, error) {
     }
 
     switch gm.Type() {
-    case Docker:
+    case types.DockerMessage:
         var dockerMsg DockerMessage
         return dockerMsg.Deserialize(data)
-    case Daemon:
+    case types.BackendMessage:
+        var backendMsg BackendMessage
+        return backendMsg.Deserialize(data)
+    case types.DaemonMessage:
         var daemonMsg DaemonMessage
         return daemonMsg.Deserialize(data)
     default:

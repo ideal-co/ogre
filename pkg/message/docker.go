@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "github.com/docker/docker/api/types/events"
     "github.com/lowellmower/ogre/pkg/health"
+    "github.com/lowellmower/ogre/pkg/types"
 )
 
 type DockerMessage struct {
@@ -15,8 +16,8 @@ type DockerMessage struct {
     Err error `json:"err,omitempty"`
 }
 
-func (dm DockerMessage) Type() MessageType {
-    return Docker
+func (dm DockerMessage) Type() types.MessageType {
+    return types.DockerMessage
 }
 
 func (dm DockerMessage) Error() error {

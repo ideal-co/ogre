@@ -1,14 +1,17 @@
 package msg
 
-import "encoding/json"
+import (
+    "encoding/json"
+    "github.com/lowellmower/ogre/pkg/types"
+)
 
 type DaemonMessage struct {
     Action string `json:"action"`
     Err error `json:"err:omitempty"`
 }
 
-func (dm DaemonMessage) Type() MessageType {
-    return Daemon
+func (dm DaemonMessage) Type() types.MessageType {
+    return types.DaemonMessage
 }
 
 func (dm DaemonMessage) Error() error {
