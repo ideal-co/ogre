@@ -1,23 +1,21 @@
 package backend
 
-import "fmt"
+import (
+	msg "github.com/lowellmower/ogre/pkg/message"
+	"github.com/lowellmower/ogre/pkg/types"
+)
 
-type Prometheus struct {
-    Metric string
-    Job string
-    Labels []string
+type PrometheusBackend struct {
+	Metric   string
+	Job      string
+	Labels   []string
+	platType types.PlatformType
 }
 
-// m, j string, l []string
-func NewPrometheusBackend() *Prometheus {
-    return &Prometheus{}
+func (p *PrometheusBackend) Send(m msg.Message) error {
+	return nil
 }
 
-func (p *Prometheus) String(label string) string {
-    return fmt.Sprintf("%s{label=%s}", p.Metric, label)
-}
-
-func (p *Prometheus) URL() string {
-    // /metrics/job/some_job
-    return fmt.Sprintf("/metrics/job/%s", p.Job)
+func (p *PrometheusBackend) Type() types.PlatformType {
+	return types.PrometheusBackend
 }
