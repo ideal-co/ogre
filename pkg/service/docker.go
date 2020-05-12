@@ -3,12 +3,12 @@ package srvc
 import (
 	"bytes"
 	"context"
-	"github.com/docker/docker/api/types"
+	dockerTypes "github.com/docker/docker/api/types"
+	internalTypes "github.com/lowellmower/ogre/pkg/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/lowellmower/ogre/pkg/backend"
 	"github.com/lowellmower/ogre/pkg/health"
 	"github.com/lowellmower/ogre/pkg/log"
 	msg "github.com/lowellmower/ogre/pkg/message"
@@ -21,21 +21,21 @@ import (
 // use, we are able to reduce code footprint and more easily test.
 type DockerAPIClient interface {
 	// subset of the ContainerAPIClient interface
-	ContainerInspect(ctx context.Context, container string) (types.ContainerJSON, error)
-	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
-	ContainerTop(ctx context.Context, container string, arguments []string) (types.ContainerProcessList, error)
+	ContainerInspect(ctx context.Context, container string) (dockerTypes.ContainerJSON, error)
+	ContainerList(ctx context.Context, options dockerTypes.ContainerListOptions) ([]dockerTypes.Container, error)
+	ContainerTop(ctx context.Context, container string, arguments []string) (dockerTypes.ContainerProcessList, error)
 
 	// subset of the SystemAPIClient interface
-	Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error)
-	Info(ctx context.Context) (types.Info, error)
+	Events(ctx context.Context, options dockerTypes.EventsOptions) (<-chan events.Message, <-chan error)
+	Info(ctx context.Context) (dockerTypes.Info, error)
 
 	// https://pkg.go.dev/github.com/docker/docker/client@v1.13.1?tab=doc#ContainerAPIClient
-	ContainerAttach(ctx context.Context, container string, options types.ContainerAttachOptions) (types.HijackedResponse, error)
-	ContainerExecAttach(ctx context.Context, execID string, config types.ExecConfig) (types.HijackedResponse, error)
-	ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error)
-	ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error)
-	ContainerExecResize(ctx context.Context, execID string, options types.ResizeOptions) error
-	ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error
+	ContainerAttach(ctx context.Context, container string, options dockerTypes.ContainerAttachOptions) (dockerTypes.HijackedResponse, error)
+	ContainerExecAttach(ctx context.Context, execID string, config dockerTypes.ExecConfig) (dockerTypes.HijackedResponse, error)
+	ContainerExecCreate(ctx context.Context, container string, config dockerTypes.ExecConfig) (dockerTypes.IDResponse, error)
+	ContainerExecInspect(ctx context.Context, execID string) (dockerTypes.ContainerExecInspect, error)
+	ContainerExecResize(ctx context.Context, execID string, options dockerTypes.ResizeOptions) error
+	ContainerExecStart(ctx context.Context, execID string, config dockerTypes.ExecStartCheck) error
 }
 
 // DockerService satisfies the srvc.Service interface and is the struct for
@@ -46,7 +46,6 @@ type DockerAPIClient interface {
 type DockerService struct {
 	Client DockerAPIClient
 	Containers []*Container
-	Backend *backend.Platform
 
 	ctx *Context
 	in chan msg.Message
@@ -60,21 +59,13 @@ type DockerService struct {
 type Container struct {
 	Name string
 	ID string
-	Info types.ContainerJSON
+	Info dockerTypes.ContainerJSON
 	HealthChecks []*health.DockerHealthCheck
 }
 
-// ExecResult is the encapsulating struct used to capture the output from a command
-// run internal or external to a container.
-type ExecResult struct {
-	Exit int
-	StdOut string
-	StdErr string
-}
-
 // Type satisfies the Service.Type interface and returns a ServiceType of Docker
-func (ds *DockerService) Type() ServiceType {
-	return Docker
+func (ds *DockerService) Type() internalTypes.ServiceType {
+	return internalTypes.DockerService
 }
 
 // Start is the DockerService implementation of the Service interface's Start
@@ -126,13 +117,10 @@ func NewDockerService(out, in, errChan chan msg.Message) (*DockerService, error)
 		return nil, err
 	}
 
-	// TODO (lmower): need to go through the checks collected and ensure that
-	//                all backend.PlatformTypes have platforms to accept output
-
 	return ds, nil
 }
 
-func NewContainer(info types.ContainerJSON) *Container {
+func NewContainer(info dockerTypes.ContainerJSON) *Container {
 	// parse label info
 	heathChecks := health.NewDockerHealthCheck(info.Config.Labels)
 
@@ -147,7 +135,7 @@ func NewContainer(info types.ContainerJSON) *Container {
 func (ds *DockerService) CollectContainers()([]*Container, error){
 	var cList []*Container
 	arg, _ := filters.FromParam("status=running")
-	opts := types.ContainerListOptions{Filters: arg}
+	opts := dockerTypes.ContainerListOptions{Filters: arg}
 
 	// gather running containers
 	containers, err := ds.Client.ContainerList(ds.ctx.Ctx, opts)
@@ -159,7 +147,7 @@ func (ds *DockerService) CollectContainers()([]*Container, error){
 	for _, c := range containers {
 		info, err := ds.Client.ContainerInspect(ds.ctx.Ctx, c.ID)
 		if err != nil {
-			log.Service.WithField("service", Docker).Errorf("could not get info for %s: %s", c.ID, err)
+			log.Service.WithField("service", internalTypes.DockerService).Errorf("could not get info for %s: %s", c.ID, err)
 			continue
 		}
 
@@ -181,10 +169,10 @@ func (ds *DockerService) listen() {
 		select {
 		case m := <-ds.in:
 			dm := m.(msg.DockerMessage)
-			log.Service.WithField("service", Docker).Tracef("docker listen got %+v", m)
+			log.Service.WithField("service", internalTypes.DockerService).Tracef("docker listen got %+v", m)
 			switch dm.Action {
 			case "health":
-				log.Service.WithField("service", Docker).Tracef("HEALTH CHECK %+v", )
+				log.Service.WithField("service", internalTypes.DockerService).Tracef("HEALTH CHECK %+v", )
 			case "stop":
 				signal <- struct{}{}
 				ds.ctx = NewDefaultContext()
@@ -203,7 +191,7 @@ func (ds *DockerService) listen() {
 // listening loop that there was signal from the daemon to stop this part of
 // the service but not to shutdown, i.e. the service can be started again.
 func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
-	dockerEvents, errChan := ds.Client.Events(ds.ctx.Ctx, types.EventsOptions{})
+	dockerEvents, errChan := ds.Client.Events(ds.ctx.Ctx, dockerTypes.EventsOptions{})
 	for {
 		select {
 		case <-signal:
@@ -211,10 +199,10 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 			//       ds.ctx.Ctx passed to ds.Client.Events above but
 			//       this is also the service level context so we must
 			//       not cancel it. Simply returning for now.
-			log.Service.WithField("service", Docker).Trace("stopping container listener...")
+			log.Service.WithField("service", internalTypes.DockerService).Trace("stopping container listener...")
 			return
 		case err := <- errChan:
-			log.Service.WithField("service", Docker).Tracef("err in listen %s\n", err)
+			log.Service.WithField("service", internalTypes.DockerService).Tracef("err in listen %s\n", err)
 			ds.err <- msg.NewDockerMessage(events.Message{}, err)
 		case dEvent := <-dockerEvents:
 			switch dEvent.Type {
@@ -224,16 +212,16 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 				case "start":
 					// Add a container to the list being monitored should the label
 					// indicating it should be monitored exist
-					log.Service.WithField("service", Docker).Infof("docker action %s\n", dEvent.Action)
+					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				case "restart":
-					log.Service.WithField("service", Docker).Infof("docker action %s\n", dEvent.Action)
+					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				case "stop":
-					log.Service.WithField("service", Docker).Infof("docker action %s\n", dEvent.Action)
+					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				case "die":
-					log.Service.WithField("service", Docker).Infof("docker action %s\n", dEvent.Action)
+					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				// introduced in docker v1.12 (2016)
 				case "health_status":
@@ -258,7 +246,7 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 					       }
 					   }
 					*/
-					log.Service.WithField("service", Docker).Infof("docker action %s\n", dEvent.Action)
+					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				}
 			}
@@ -278,36 +266,39 @@ func (ds *DockerService) startChecking(c *Container)  {
 	}
 }
 
-func (ds *DockerService) stopChecking()  {
+func (ds *DockerService) stopChecking() {
 }
 
 func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCheck) {
-	tick := time.NewTicker(chk.Formatter.Interval)
+	tick := time.NewTicker(chk.Interval)
 	defer tick.Stop()
 
 	for {
 		select {
 		case <-ds.ctx.Done():
-			log.Service.WithField("service", Docker).Tracef("health check context stopped")
+			log.Service.WithField("service", internalTypes.DockerService).Tracef("health check context stopped")
 			return
 		case <-tick.C:
 			if chk.Destination == "ex" {
 				// TODO - external checks
-				log.Service.WithField("service", Docker).Tracef("EXTERN CHECK: %+v", *chk)
+				log.Service.WithField("service", internalTypes.DockerService).Tracef("EXTERN CHECK: %+v", *chk)
 			} else {
-				log.Service.WithField("service", Docker).Tracef("INTERN CHECK: %+v", *chk)
-				res, err := ds.execInternalCheck(c, chk)
+				log.Service.WithField("service", internalTypes.DockerService).Tracef("INTERN CHECK: %+v", *chk)
+				result, err := ds.execInternalCheck(c, chk)
 				if err != nil {
-					log.Service.WithField("service", Docker).Errorf("check %s could not be run: %s", chk.Name, err)
+					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
+					continue
 				}
-				log.Service.Tracef("RESPONSE: %v", *res)
+				chk.Result = result
+				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target)
 			}
 		}
 	}
 }
 
-func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealthCheck) (*ExecResult, error) {
-	execConf := types.ExecConfig{
+func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealthCheck) (health.ExecResult, error) {
+	var result health.ExecResult
+	execConf := dockerTypes.ExecConfig{
 		User:         "root",
 		Privileged:   true,
 		AttachStderr: true,
@@ -319,16 +310,16 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 	// create the exec instance
 	exec, err := ds.Client.ContainerExecCreate(ds.ctx.Ctx, c.ID, execConf)
 	if err != nil {
-		log.Service.WithField("service", Docker).Tracef("error creating check on container %s: %s", c.ID, err)
-		return nil, err
+		log.Service.WithField("service", internalTypes.DockerService).Tracef("error creating check on container %s: %s", c.ID, err)
+		return result, err
 	}
 
 	// execute the command and get hijacked response
 	hijack, err := ds.Client.ContainerExecAttach(ds.ctx.Ctx, exec.ID, execConf)
 	defer hijack.Close()
 	if err != nil {
-		log.Service.WithField("service", Docker).Tracef("error attaching exec: %s", err)
-		return nil, err
+		log.Service.WithField("service", internalTypes.DockerService).Tracef("error attaching exec: %s", err)
+		return result, err
 	}
 
 	// use docker api lib to trim prepending bytes from message
@@ -336,19 +327,23 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 	stdcopy.StdCopy(&outBuf, &errBuf, hijack.Reader)
 	stdout, err := ioutil.ReadAll(&outBuf)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	stderr, err := ioutil.ReadAll(&errBuf)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 
 	// get the exit code from the exec
 	res, err := ds.Client.ContainerExecInspect(ds.ctx.Ctx, exec.ID)
 	if err != nil {
-		log.Service.WithField("service", Docker).Tracef("error inspecting exec: %s", err)
-		return nil, err
+		log.Service.WithField("service", internalTypes.DockerService).Tracef("error inspecting exec: %s", err)
+		return result, err
 	}
 
-	return &ExecResult{res.ExitCode, string(stdout), string(stderr)}, nil
+	result.Exit = res.ExitCode
+	result.StdOut = string(stdout)
+	result.StdErr= string(stderr)
+
+	return result, nil
 }
