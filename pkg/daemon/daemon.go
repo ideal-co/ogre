@@ -2,10 +2,12 @@ package daemon
 
 import (
 	"bytes"
+	"github.com/lowellmower/ogre/pkg/backend"
 	"github.com/lowellmower/ogre/pkg/config"
 	"github.com/lowellmower/ogre/pkg/log"
 	msg "github.com/lowellmower/ogre/pkg/message"
 	srvc "github.com/lowellmower/ogre/pkg/service"
+	"github.com/lowellmower/ogre/pkg/types"
 	"io"
 	"net"
 	"os"
@@ -23,11 +25,11 @@ const (
 // and receiving information to and from the daemon.
 type Daemon struct {
 	In  chan msg.Message
-	Out map[msg.MessageType]chan msg.Message
+	Out map[types.MessageType]chan msg.Message
 	Err chan msg.Message
 
 	ctx      *srvc.Context
-	services map[srvc.ServiceType]srvc.Service
+	services map[types.ServiceType]srvc.Service
 	listener net.Listener
 }
 
@@ -37,6 +39,7 @@ type Daemon struct {
 func Run() {
 	d := New()
 	d.collectServices()
+	d.establishClients()
 	go d.runServices()
 	go d.listenChannel()
 	d.ListenSocket()
@@ -45,10 +48,11 @@ func Run() {
 // New returns a pointer to a new instance of Daemon struct
 func New() *Daemon {
 	return &Daemon{
-		In:  make(chan msg.Message),
-		Out: make(map[msg.MessageType]chan msg.Message),
-		Err: make(chan msg.Message),
-		ctx: srvc.NewDefaultContext(),
+		In:       make(chan msg.Message),
+		Out:      make(map[types.MessageType]chan msg.Message),
+		Err:      make(chan msg.Message),
+		ctx:      srvc.NewDefaultContext(),
+		services: make(map[types.ServiceType]srvc.Service),
 	}
 
 }
@@ -119,9 +123,11 @@ func (d *Daemon) listenChannel() {
 		select {
 		case <-d.ctx.Done():
 			log.Daemon.Trace("context marked as done")
+			// move to func
 			for _, s := range d.services {
 				s.Stop()
 			}
+
 			return
 			//d.Err <- d.ctx.Err
 			//d.Err <- d.ctx.Callback
@@ -149,23 +155,44 @@ func (d *Daemon) listenChannel() {
 // this field, the process should exit. At the moment, the only service to be
 // configured is the Docker service, others will be added as the project grows
 func (d *Daemon) collectServices() {
-	d.services = make(map[srvc.ServiceType]srvc.Service)
-
 	// TODO (lmower): gather desired services from configuration which will
 	//                change the signature to something like:
 	//                srvc.NewService(config.Daemon.GetString("services"), d.In, d.ctx)
-	out := make(chan msg.Message)
-	service, err := srvc.NewService(srvc.Docker, d.In, out, d.Err)
-	if err != nil {
-		log.Daemon.Fatalf("could not establish services: %s", err)
+	srvMap := map[types.ServiceType]types.MessageType{
+		types.DockerService:  types.DockerMessage,
+		types.BackendService: types.BackendMessage,
 	}
 
-	d.services[srvc.Docker] = service
-	d.Out[msg.Docker] = out
+	for s, m := range srvMap {
+		out := make(chan msg.Message)
+		service, err := srvc.NewService(s, d.In, out, d.Err)
+		if err != nil {
+			log.Daemon.Fatalf("could not establish services: %s", err)
+		}
+		d.services[s] = service
+		d.Out[m] = out
+	}
 }
 
+func (d *Daemon) establishClients() {
+	bes := d.services[types.BackendService].(*srvc.BackendService)
+	// get statsd backend client if configured
+	if addr, ok := config.Daemon.Store.Find("backends.statsd.server"); ok {
+		bec, err := backend.NewBackendClient(types.StatsdBackend, addr.(string))
+		if err != nil {
+			log.Daemon.Fatalf("could not get statsd backend: %s", err)
+		}
+		bes.Platforms[types.StatsdBackend] = bec
+	}
+}
+
+// directIncomingMsg takes a message and pushes it over the corresponding
+// channel for the MessageType. This is used by the daemon to direct messages
+// to services and backends. If there is no channel for that message type it
+// is presumed that the message is meant for the daemon itself.
 func (d *Daemon) directIncomingMsg(m msg.Message) {
 	log.Daemon.Tracef("in directIncoming %+v", m)
+
 	// if it is a message destined for a service, send it over the
 	// corresponding channel
 	if ch, ok := d.Out[m.Type()]; ok {
