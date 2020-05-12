@@ -6,5 +6,11 @@
     "file": "/var/log/ogred.log",
     "silent": false,
     "report_caller": false
+  },
+  "backends": {
+    "statsd": {
+      "server": "127.0.0.1:8125",
+      "prefix": "ogre"
+    }
   }
 }
