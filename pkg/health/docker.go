@@ -2,8 +2,8 @@ package health
 
 import (
     "context"
-    "github.com/lowellmower/ogre/pkg/backend"
     "github.com/lowellmower/ogre/pkg/log"
+    "github.com/lowellmower/ogre/pkg/types"
     "os/exec"
     "strings"
     "sync"
@@ -34,15 +34,23 @@ type DockerHealthCheck struct {
     // information about how to operate the health checks
     Formatter *DockerFormatter
 
+    // the outcome of a health check's command
+    Result ExecResult
+
     mu sync.Mutex
 }
 
 type DockerFormatter struct {
     Output FormatOutput
-    Interval time.Duration
+    Platform FormatPlatform
+}
 
-    Backend backend.Platform
-    BackendLabels map[string]string
+// ExecResult is the encapsulating struct used to capture the output from a command
+// run internal or external to a container.
+type ExecResult struct {
+    Exit int
+    StdOut string
+    StdErr string
 }
 
 type FormatOutput struct {
@@ -50,23 +58,30 @@ type FormatOutput struct {
     Result string
 }
 
+type FormatPlatform struct {
+    Target types.PlatformType
+    // Metric will only be set for types.PrometheusBackend
+    Metric string
+    // Job will only be set for types.PrometheusBackend
+    Job string
+}
+
 func (dhc *DockerHealthCheck) String() string {
-    return ""
+    return dhc.Name
 }
 
 func (dhc *DockerHealthCheck) ExitCode() int {
-    return 0
+    return dhc.Result.Exit
 }
 
 func (dhc *DockerHealthCheck) Passed() bool {
-    return true
+    return dhc.Result.Exit == 0
 }
 
-func NewDockerFormatter(beLabels, opLabels map[string]string) *DockerFormatter {
+func NewDockerFormatter(platLabels, opLabels map[string]string) *DockerFormatter {
     return &DockerFormatter{
         Output:        parseOutputFromLabels(opLabels),
-        Backend:       parseBackendFromLabels(beLabels),
-        BackendLabels: make(map[string]string),
+        Platform:      parsePlatformFromLabels(platLabels),
     }
 }
 
@@ -81,6 +96,15 @@ func NewDockerHealthCheck(labels map[string]string) []*DockerHealthCheck {
             case health:
                 hc := parseHealthCheck(splitKey[subSpaceOne], splitKey[subSpaceOne:], val)
                 hc.Formatter = formatter
+                if interval, ok := labels["ogre.format.health.interval"]; ok {
+                    dur, err := time.ParseDuration(interval)
+                    hc.Interval = dur
+                    if err != nil {
+                        log.Service.Errorf("could not parse time %s from label", interval)
+                        hc.Interval = 5 * time.Second
+                    }
+
+                }
                 checks = append(checks, hc)
             }
         }
@@ -108,13 +132,6 @@ func newFormatterFromLabels(labels map[string]string) *DockerFormatter {
         }
     }
     f := NewDockerFormatter(fmtBackendMap, fmtHealthMap)
-    if interval, ok := labels["ogre.format.health.interval"]; ok {
-        dur, err := time.ParseDuration(interval)
-        if err != nil {
-            log.Service.Errorf("could not parse time %s from label", interval)
-        }
-        f.Interval = dur
-    }
 
     return f
 }
@@ -137,25 +154,25 @@ func parseOutputFromLabels(outputLabels map[string]string) FormatOutput {
     return out
 }
 
-func parseBackendFromLabels(backendLabels map[string]string) backend.Platform {
-    var be backend.Platform
-    for key, val := range backendLabels {
-        splitKey := strings.Split(key, ".")
-        switch splitKey[space] {
-        case formatBackendProm:
-            if be == nil {
-                be = backend.NewPrometheusBackend()
-            }
-            switch splitKey[subSpaceOne] {
-            case prometheusMetric:
-                be.(*backend.Prometheus).Metric = val
-            case prometheusJob:
-                be.(*backend.Prometheus).Job = val
-            }
-        }
-    }
+func parsePlatformFromLabels(backendLabels map[string]string) FormatPlatform {
+   fp := FormatPlatform{}
+   for key, val := range backendLabels {
+       splitKey := strings.Split(key, ".")
+       switch splitKey[space] {
+       case formatBackendStatsd:
+           fp.Target = types.StatsdBackend
+       case formatBackendProm:
+           fp.Target = types.PrometheusBackend
+           switch splitKey[subSpaceOne] {
+           case prometheusMetric:
+               fp.Metric = val
+           case prometheusJob:
+               fp.Job = val
+           }
+       }
+   }
 
-    return be
+   return fp
 }
 
 
