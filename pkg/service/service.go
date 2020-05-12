@@ -4,18 +4,13 @@ import (
 	"context"
 	"fmt"
 	msg "github.com/lowellmower/ogre/pkg/message"
+	"github.com/lowellmower/ogre/pkg/types"
 )
 
-type ServiceType string
-
-const (
-	CLI    ServiceType = "CLI"
-	Docker ServiceType = "docker"
-)
 
 // Service is the interface which all services will implement.
 type Service interface {
-	Type() ServiceType
+	Type() types.ServiceType
 	Start() error
 	Stop() error
 }
@@ -34,10 +29,12 @@ type Context struct {
 // NewService takes a ServiceType and a channel of msg.Message and returns a
 // Service interface to be stored on the Daemon's service field, keyed by the
 // ServiceType.
-func NewService(s ServiceType, in, out, err chan msg.Message) (Service, error) {
+func NewService(s types.ServiceType, in, out, err chan msg.Message) (Service, error) {
 	switch s {
-	case Docker:
+	case types.DockerService:
 		return NewDockerService(in, out, err)
+	case types.BackendService:
+		return NewBackendService(in, out, err)
 	default:
 		return nil, fmt.Errorf("could not establish service type: %s", s)
 	}

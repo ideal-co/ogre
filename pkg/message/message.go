@@ -1,17 +1,11 @@
 package msg
 
-type MessageType string
-
-const (
-	Daemon MessageType = "daemon"
-	Docker MessageType = "docker"
-	Host MessageType = "host"
-)
+import "github.com/lowellmower/ogre/pkg/types"
 
 type Message interface {
 	Deserializer
 	Serializer
-	Type() MessageType
+	Type() types.MessageType
 	Error() error
 }
 
