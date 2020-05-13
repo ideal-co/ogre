@@ -9,6 +9,7 @@ const (
     HTTPBackend PlatformType = "http"
     GrafanaBackend PlatformType = "grafana"
     GraphiteBackend PlatformType = "graphite"
+    DefaultBackend PlatformType = "log"
 )
 
 
