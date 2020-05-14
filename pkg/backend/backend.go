@@ -1,7 +1,9 @@
 package backend
 
 import (
+	"fmt"
 	"github.com/lowellmower/ogre/pkg/config"
+	"github.com/lowellmower/ogre/pkg/log"
 	msg "github.com/lowellmower/ogre/pkg/message"
 	"github.com/lowellmower/ogre/pkg/types"
 )
@@ -21,10 +23,15 @@ type BackendClient interface {
 func NewBackendClient(pType types.PlatformType, addr string) (Platform, error) {
 	switch pType {
 	case types.StatsdBackend:
+		// check to see if there is a configured prefix for statsd
 		prefix := config.Daemon.GetString("backends.statsd.server.prefix")
 		return NewStatsdClient(addr, prefix)
+	case types.DefaultBackend:
+		// our default backend should be the service log but without the logrus
+		// formatting when messages are written.
+		return NewDefaultBackend(log.Service.Out)
 	default:
-		// TODO (lmower): return some default backend type here
-		return nil, nil
+		// we didn't get a recognized backend type
+		return nil, fmt.Errorf("could not establish a backend for address: %s", addr)
 	}
 }
