@@ -5,6 +5,7 @@ import (
 	"github.com/lowellmower/ogre/pkg/types"
 )
 
+// PrometheusBackend
 type PrometheusBackend struct {
 	Metric   string
 	Job      string

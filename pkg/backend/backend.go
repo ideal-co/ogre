@@ -15,6 +15,9 @@ type BackendClient interface {
 	Send(msg.Message) error
 }
 
+// NewBackendClient takes a types.PlatformType and an address and returns a
+// typed backend.Platform interface and an error which will be nil upon
+// successful initialization of the Platform.
 func NewBackendClient(pType types.PlatformType, addr string) (Platform, error) {
 	switch pType {
 	case types.StatsdBackend:

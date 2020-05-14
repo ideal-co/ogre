@@ -40,6 +40,8 @@ type DockerHealthCheck struct {
 	mu sync.Mutex
 }
 
+// DockerFormatter encapsulates the format for the output and backend as it is
+// parsed from the labels returned from the Docker API for a single container.
 type DockerFormatter struct {
 	Output   FormatOutput
 	Platform FormatPlatform
@@ -53,11 +55,13 @@ type ExecResult struct {
 	StdErr string
 }
 
+// FormatOutput is the struct representation of the ogre.format.output.$ labels.
 type FormatOutput struct {
 	Type   string
 	Result string
 }
 
+// FormatPlatform is the struct representation of the ogre.format.backend.$ labels.
 type FormatPlatform struct {
 	Target types.PlatformType
 	// Metric will only be set for types.PrometheusBackend
