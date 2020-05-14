@@ -56,10 +56,6 @@ func (bes *BackendService) listen() {
             } else {
                 log.Service.Infof("%s", bem.CompletedCheck.String())
             }
-            //bes.Platforms[bem.]
-            //if err := sdb.Client.SetInt(bem.CompletedCheck.String(), int64(bem.CompletedCheck.ExitCode()), 0.5); err != nil {
-            //    sdb.err <-msg.GenericMessage{Err: err}
-            //}
         }
     }
 }
