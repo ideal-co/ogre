@@ -46,13 +46,21 @@ func (mc *MockClient) Events(ctx context.Context, options types.EventsOptions) (
 }
 
 func (mc *MockClient) ContainerInspect(ctx context.Context, container string) (types.ContainerJSON, error) {
+	// TODO (lmower): only get the containers which match IDs from 'list'
 	mc.On("ContainerInspect", ctx, container).Return(mc.TypeMap["inspect"], nil)
 	args := mc.Mock.Called(ctx, container)
 	return args.Get(0).(types.ContainerJSON), args.Error(1)
 }
 
 func (mc *MockClient) ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error) {
-	mc.On("ContainerList", ctx, options).Return(mc.TypeMap["list"], nil)
+	var returnList []types.Container
+	conts := mc.TypeMap["list"]
+	for _, c := range conts.([]types.Container) {
+		if c.Status == "running" {
+			returnList = append(returnList, c)
+		}
+	}
+	mc.On("ContainerList", ctx, options).Return(returnList, nil)
 	args := mc.Mock.Called(ctx, options)
 	return args.Get(0).([]types.Container), args.Error(1)
 }
@@ -92,12 +100,12 @@ func TestCollectContainers(t *testing.T) {
 				"list": []types.Container{
 					{
 						ID: "09cc8f08b9397f1175058661a16becf417f140da001c738bd44617f42e631f78",
+						Status: "running",
 					},
 				},
 				"inspect": types.ContainerJSON{
 					ContainerJSONBase: &types.ContainerJSONBase{
 						ID:    "09cc8f08b9397f1175058661a16becf417f140da001c738bd44617f42e631f78",
-						Image: "ogre-test:latest",
 						Name:  "ogre-test-container",
 						State: &types.ContainerState{
 							Status:     "running",
