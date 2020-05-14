@@ -178,12 +178,19 @@ func (d *Daemon) establishClients() {
 	bes := d.services[types.BackendService].(*srvc.BackendService)
 	// get statsd backend client if configured
 	if addr, ok := config.Daemon.Store.Find("backends.statsd.server"); ok {
-		bec, err := backend.NewBackendClient(types.StatsdBackend, addr.(string))
+		platform, err := backend.NewBackendClient(types.StatsdBackend, addr.(string))
 		if err != nil {
 			log.Daemon.Fatalf("could not get statsd backend: %s", err)
 		}
-		bes.Platforms[types.StatsdBackend] = bec
+		bes.Platforms[types.StatsdBackend] = platform
 	}
+
+	// always set up the default backend (log)
+	platform, err := backend.NewBackendClient(types.DefaultBackend, "")
+	if err != nil {
+		log.Daemon.Fatalf("cannot start daemon %s", err)
+	}
+	bes.Platforms[types.DefaultBackend] = platform
 }
 
 // directIncomingMsg takes a message and pushes it over the corresponding
