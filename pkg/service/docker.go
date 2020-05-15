@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	dockerTypes "github.com/docker/docker/api/types"
-	internalTypes "github.com/lowellmower/ogre/pkg/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -12,7 +11,9 @@ import (
 	"github.com/lowellmower/ogre/pkg/health"
 	"github.com/lowellmower/ogre/pkg/log"
 	msg "github.com/lowellmower/ogre/pkg/message"
+	internalTypes "github.com/lowellmower/ogre/pkg/types"
 	"io/ioutil"
+	"os/exec"
 	"time"
 )
 
@@ -43,11 +44,12 @@ type DockerAPIClient interface {
 // its 'out' field. This channel is also the 'Daemon.In' field where other
 // services and user input communicate with the Daemon.
 type DockerService struct {
-	Client DockerAPIClient
-	Containers []*Container
+	Client        DockerAPIClient
+	Containers    []*Container
+	RunningChecks map[string]context.CancelFunc
 
 	ctx *Context
-	in chan msg.Message
+	in  chan msg.Message
 	out chan msg.Message
 	err chan msg.Message
 }
@@ -57,8 +59,10 @@ type DockerService struct {
 // of HealthChecks to execute.
 type Container struct {
 	Name string
-	ID string
-	Info dockerTypes.ContainerJSON
+	ID   string
+	ctx  *Context
+
+	Info         dockerTypes.ContainerJSON
 	HealthChecks []*health.DockerHealthCheck
 }
 
@@ -104,11 +108,12 @@ func NewDockerService(out, in, errChan chan msg.Message) (*DockerService, error)
 	}
 
 	ds := &DockerService{
-		Client: dockerClient,
-		ctx: NewDefaultContext(),
-		in: in,
-		out: out,
-		err: errChan,
+		Client:        dockerClient,
+		RunningChecks: make(map[string]context.CancelFunc),
+		ctx:           NewDefaultContext(),
+		in:            in,
+		out:           out,
+		err:           errChan,
 	}
 
 	ds.Containers, err = ds.collectContainers()
@@ -119,19 +124,35 @@ func NewDockerService(out, in, errChan chan msg.Message) (*DockerService, error)
 	return ds, nil
 }
 
+// NewContainer takes the ContainerJSON result from a call to the Docker API
+// for inspect and returns a pointer to a container with the any applicable
+// labels from the info param parsed into DockerHealthChecks. If no applicable
+// checks were found, i.e. there were no labels prefixed with 'ogre.health'
+// than an empty list is returned from NewDockerHealthCheck and a nil value
+// will be returned from NewContainer.
 func NewContainer(info dockerTypes.ContainerJSON) *Container {
 	// parse label info
 	heathChecks := health.NewDockerHealthCheck(info.Config.Labels)
+	if len(heathChecks) == 0 {
+		return nil
+	}
 
 	// instantiate container
 	c := &Container{Info: info, HealthChecks: heathChecks}
 	c.ID = info.ID
 	c.Name = info.Name
+	c.ctx = NewDefaultContext()
 
 	return c
 }
 
-func (ds *DockerService) collectContainers()([]*Container, error){
+// collectContainers will return a slice of pointers of type Container and an
+// error which the latter will be nil upon success. The slice will be empty
+// (of len 0) if there were no running containers or there were no containers
+// which had at least one label prefixed with 'ogre.health'. Only containers
+// which are running and have a configured health check will be returned from
+// collect containers
+func (ds *DockerService) collectContainers() ([]*Container, error) {
 	var cList []*Container
 	arg, _ := filters.FromParam("status=running")
 	opts := dockerTypes.ContainerListOptions{Filters: arg}
@@ -150,7 +171,9 @@ func (ds *DockerService) collectContainers()([]*Container, error){
 			continue
 		}
 
-		cList = append(cList, NewContainer(info))
+		if newCont := NewContainer(info); newCont != nil {
+			cList = append(cList, newCont)
+		}
 	}
 
 	return cList, nil
@@ -173,10 +196,18 @@ func (ds *DockerService) listen() {
 			case "health":
 				// TODO (lmower) is this an action we want to take?
 			case "stop":
+				ds.stopAllChecking()
 				signal <- struct{}{}
 				ds.ctx = NewDefaultContext()
 			case "start":
 				go ds.listenDockerAPI(signal)
+				containers, err := ds.collectContainers()
+				if err != nil {
+					log.Service.WithField("service", internalTypes.DockerService).Errorf("error getting containers on start: %s", err)
+					continue
+				}
+				ds.Containers = containers
+				go ds.listenHealthChecks()
 			case "shutdown":
 				ds.ctx.Cancel()
 				return
@@ -200,7 +231,7 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 			//       not cancel it. Simply returning for now.
 			log.Service.WithField("service", internalTypes.DockerService).Trace("stopping container listener...")
 			return
-		case err := <- errChan:
+		case err := <-errChan:
 			log.Service.WithField("service", internalTypes.DockerService).Tracef("err in listen %s\n", err)
 			ds.err <- msg.NewDockerMessage(events.Message{}, err)
 		case dEvent := <-dockerEvents:
@@ -242,19 +273,41 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 
 func (ds *DockerService) listenHealthChecks() {
 	for _, c := range ds.Containers {
-		ds.startChecking(c)
+		if _, ok := ds.RunningChecks[c.ID]; !ok {
+			ds.RunningChecks[c.ID] = c.ctx.Cancel
+			ds.startChecking(c)
+		}
 	}
 }
 
-func (ds *DockerService) startChecking(c *Container)  {
+func (ds *DockerService) startChecking(c *Container) {
 	for _, chk := range c.HealthChecks {
 		go ds.startCheckLoop(c, chk)
 	}
 }
 
-func (ds *DockerService) stopChecking() {
+func (ds *DockerService) stopContainerChecking(cid string) {
+	if cancel, ok := ds.RunningChecks[cid]; ok {
+		cancel()
+	}
 }
 
+func (ds *DockerService) stopAllChecking() {
+	for cid, cancel := range ds.RunningChecks {
+		log.Service.WithField("service", internalTypes.DockerService).Infof("stopping check for %s", cid)
+		cancel()
+		delete(ds.RunningChecks, cid)
+	}
+}
+
+// startCheckLoop takes a pointer to a Container and a DockerHealthCheck and
+// begins an infinite loop where the check is executed within or against the
+// container at an interval configured for the check. This loop can only be
+// interrupted by the DockerService's context being canceled, the Container's
+// context being canceled, or the ogre daemon process being killed or issued
+// an interrupt. When a health check is executed on the interval, the completed
+// check is then sent as a msg.Message to the ogre daemon to be routed to the
+// appropriate reporting backend.
 func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCheck) {
 	tick := time.NewTicker(chk.Interval)
 	defer tick.Stop()
@@ -262,14 +315,23 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 	for {
 		select {
 		case <-ds.ctx.Done():
-			log.Service.WithField("service", internalTypes.DockerService).Tracef("health check context stopped")
+			log.Service.WithField("service", internalTypes.DockerService).Tracef("service stopped, stopping checks for container %s", c.Name)
+			return
+		case <-c.ctx.Done():
+			log.Service.WithField("service", internalTypes.DockerService).Tracef("stopping container checks for %s", c.Name)
+			tick.Stop()
 			return
 		case <-tick.C:
 			if chk.Destination == "ex" {
-				// TODO - external checks
+				result, err := ds.execExternalCheck(c, chk)
+				if err != nil {
+					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
+					continue
+				}
 				log.Service.WithField("service", internalTypes.DockerService).Tracef("EXTERN CHECK: %+v", chk)
+				chk.Result = result
+				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target)
 			} else {
-				log.Service.WithField("service", internalTypes.DockerService).Tracef("INTERN CHECK: %+v", chk)
 				result, err := ds.execInternalCheck(c, chk)
 				if err != nil {
 					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
@@ -282,6 +344,52 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 	}
 }
 
+func (ds *DockerService) execExternalCheck(c *Container, chk *health.DockerHealthCheck) (health.ExecResult, error) {
+	var result health.ExecResult
+	// make a copy of the command to reset after exec
+	var copyCmd exec.Cmd
+	copyCmd = *chk.Cmd
+
+	var outBuf, errBuf bytes.Buffer
+	chk.Cmd.Stdout = &outBuf
+	chk.Cmd.Stderr = &errBuf
+
+	err := chk.Cmd.Start()
+	if err != nil {
+		log.Service.Errorf("Error with run", err)
+		return result, err
+	}
+
+	err = chk.Cmd.Wait()
+	if err != nil {
+		log.Service.Errorf("Error with wait", err)
+		return result, err
+	}
+
+	stdout, err := ioutil.ReadAll(&outBuf)
+	if err != nil {
+		return result, err
+	}
+
+	stderr, err := ioutil.ReadAll(&errBuf)
+	if err != nil {
+		return result, err
+	}
+
+	result.Exit = chk.Cmd.ProcessState.ExitCode()
+	result.StdOut = string(stdout)
+	result.StdErr = string(stderr)
+
+	chk.Cmd = &copyCmd
+	return result, nil
+}
+
+// execInternalCheck takes a point to a Container and a DockerHealthCheck and
+// returns an ExecResult and an error, the latter of which will be nil upon
+// successful execution of the health check. The command associated with the
+// DockerHealthCheck will be executed inside of the container and the result of
+// that command (exit code, stdout, stderr) will be passed to the ExecResult
+// and stored on the DockerHealthCheck struct for reporting to the backend.
 func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealthCheck) (health.ExecResult, error) {
 	var result health.ExecResult
 	execConf := dockerTypes.ExecConfig{
@@ -294,14 +402,14 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 	}
 
 	// create the exec instance
-	exec, err := ds.Client.ContainerExecCreate(ds.ctx.Ctx, c.ID, execConf)
+	exec, err := ds.Client.ContainerExecCreate(c.ctx.Ctx, c.ID, execConf)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error creating check on container %s: %s", c.ID, err)
 		return result, err
 	}
 
 	// execute the command and get hijacked response
-	hijack, err := ds.Client.ContainerExecAttach(ds.ctx.Ctx, exec.ID, execConf)
+	hijack, err := ds.Client.ContainerExecAttach(c.ctx.Ctx, exec.ID, execConf)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error attaching exec: %s", err)
 		return result, err
@@ -323,7 +431,7 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 	}
 
 	// get the exit code from the exec
-	res, err := ds.Client.ContainerExecInspect(ds.ctx.Ctx, exec.ID)
+	res, err := ds.Client.ContainerExecInspect(c.ctx.Ctx, exec.ID)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error inspecting exec: %s", err)
 		return result, err
@@ -331,7 +439,7 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 
 	result.Exit = res.ExitCode
 	result.StdOut = string(stdout)
-	result.StdErr= string(stderr)
+	result.StdErr = string(stderr)
 
 	return result, nil
 }
