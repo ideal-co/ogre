@@ -356,13 +356,11 @@ func (ds *DockerService) execExternalCheck(c *Container, chk *health.DockerHealt
 
 	err := chk.Cmd.Start()
 	if err != nil {
-		log.Service.Errorf("Error with run", err)
 		return result, err
 	}
 
 	err = chk.Cmd.Wait()
 	if err != nil {
-		log.Service.Errorf("Error with wait", err)
 		return result, err
 	}
 
