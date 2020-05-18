@@ -79,7 +79,7 @@ func (ds *DockerService) Type() internalTypes.ServiceType {
 // of a channel of msg.Message which the Err() implementation returns a non-nil
 // value.
 func (ds *DockerService) Start() error {
-	log.Daemon.Tracef("Starting %s service", ds.Type())
+	log.Service.Infof("starting %s service", ds.Type())
 	ds.listen()
 	return nil
 }
@@ -92,7 +92,7 @@ func (ds *DockerService) Start() error {
 // Cancel() method on the context associated with the DockerService, which is
 // independent of the context associated with the Daemon or any other Service.
 func (ds *DockerService) Stop() error {
-	log.Daemon.Tracef("Stopping %s service", ds.Type())
+	log.Service.Infof("stopping %s service", ds.Type())
 	ds.in <- msg.DockerMessage{Action: "shutdown"}
 	return nil
 }
@@ -323,7 +323,7 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 			return
 		case <-tick.C:
 			if chk.Destination == "ex" {
-				result, err := ds.execExternalCheck(c, chk)
+				result, err := ds.execExternalCheck(chk)
 				if err != nil {
 					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
 					continue
@@ -344,11 +344,14 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 	}
 }
 
-func (ds *DockerService) execExternalCheck(c *Container, chk *health.DockerHealthCheck) (health.ExecResult, error) {
+func (ds *DockerService) execExternalCheck(chk *health.DockerHealthCheck) (health.ExecResult, error) {
 	var result health.ExecResult
 	// make a copy of the command to reset after exec
 	var copyCmd exec.Cmd
 	copyCmd = *chk.Cmd
+	defer func(){
+		chk.Cmd = &copyCmd
+	}()
 
 	var outBuf, errBuf bytes.Buffer
 	chk.Cmd.Stdout = &outBuf
@@ -378,7 +381,6 @@ func (ds *DockerService) execExternalCheck(c *Container, chk *health.DockerHealt
 	result.StdOut = string(stdout)
 	result.StdErr = string(stderr)
 
-	chk.Cmd = &copyCmd
 	return result, nil
 }
 
