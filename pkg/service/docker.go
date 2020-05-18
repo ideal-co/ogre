@@ -332,7 +332,7 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 				chk.Result = result
 				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target)
 			} else {
-				result, err := ds.execInternalCheck(c, chk)
+				result, err := ds.execInternalCheck(c.ctx.Ctx, c.ID, chk.Cmd.Args)
 				if err != nil {
 					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
 					continue
@@ -388,7 +388,8 @@ func (ds *DockerService) execExternalCheck(c *Container, chk *health.DockerHealt
 // DockerHealthCheck will be executed inside of the container and the result of
 // that command (exit code, stdout, stderr) will be passed to the ExecResult
 // and stored on the DockerHealthCheck struct for reporting to the backend.
-func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealthCheck) (health.ExecResult, error) {
+// c *Container, chk *health.DockerHealthCheck
+func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd []string) (health.ExecResult, error) {
 	var result health.ExecResult
 	execConf := dockerTypes.ExecConfig{
 		User:         "root",
@@ -396,18 +397,17 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 		AttachStderr: true,
 		AttachStdout: true,
 		Env:          nil,
-		Cmd:          chk.RawCmd,
+		Cmd:          cmd,
 	}
 
 	// create the exec instance
-	exec, err := ds.Client.ContainerExecCreate(c.ctx.Ctx, c.ID, execConf)
+	exec, err := ds.Client.ContainerExecCreate(ctx, cid, execConf)
 	if err != nil {
-		log.Service.WithField("service", internalTypes.DockerService).Tracef("error creating check on container %s: %s", c.ID, err)
+		log.Service.WithField("service", internalTypes.DockerService).Tracef("error creating check on container %s: %s", cid, err)
 		return result, err
 	}
-
 	// execute the command and get hijacked response
-	hijack, err := ds.Client.ContainerExecAttach(c.ctx.Ctx, exec.ID, execConf)
+	hijack, err := ds.Client.ContainerExecAttach(ctx, exec.ID, execConf)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error attaching exec: %s", err)
 		return result, err
@@ -419,6 +419,7 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 	if _, e := stdcopy.StdCopy(&outBuf, &errBuf, hijack.Reader); e != nil {
 		log.Service.Errorf("error copying check output: %s", e)
 	}
+
 	stdout, err := ioutil.ReadAll(&outBuf)
 	if err != nil {
 		return result, err
@@ -429,7 +430,7 @@ func (ds *DockerService) execInternalCheck(c *Container, chk *health.DockerHealt
 	}
 
 	// get the exit code from the exec
-	res, err := ds.Client.ContainerExecInspect(c.ctx.Ctx, exec.ID)
+	res, err := ds.Client.ContainerExecInspect(ctx, exec.ID)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error inspecting exec: %s", err)
 		return result, err
