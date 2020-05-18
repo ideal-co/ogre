@@ -27,7 +27,7 @@ func writeDefaultConfig() {
 		if err != nil {
 			panic("could not read ogre configuration: " + err.Error())
 		}
-		if err = ioutil.WriteFile(install.HostConfigDir + f.Name(), data, os.FileMode(os.O_RDWR)); err != nil {
+		if err = ioutil.WriteFile(install.HostConfigDir+f.Name(), data, os.FileMode(os.O_RDWR)); err != nil {
 			panic("could not read ogre configuration: " + err.Error())
 		}
 	}

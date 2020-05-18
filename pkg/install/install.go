@@ -1,36 +1,36 @@
 package install
 
 import (
-    "path"
-    "runtime"
+	"path"
+	"runtime"
 )
 
 // Default directories
 const (
-    // config
-    HostConfigDir = "/etc/ogre/ogre.d/"
-    AppConfigDir = "configs/ogre.d/"
+	// config
+	HostConfigDir = "/etc/ogre/ogre.d/"
+	AppConfigDir  = "configs/ogre.d/"
 
-    // bin
-    HostBinDir = "/usr/local/bin/"
-    AppBinDir = "bin/"
+	// bin
+	HostBinDir = "/usr/local/bin/"
+	AppBinDir  = "bin/"
 )
 
 // Default config files
 const (
-    DockerConfig = "docker.conf.json"
-    OgredConfig = "ogred.conf.json"
-    ServiceConfig = "services.conf.json"
+	DockerConfig  = "docker.conf.json"
+	OgredConfig   = "ogred.conf.json"
+	ServiceConfig = "services.conf.json"
 )
 
 // Default executable file paths
 const (
-    OgredBin = "ogred"
+	OgredBin = "ogred"
 )
 
 // misc
 const (
-    HostPIDFilepath = "/etc/ogre/ogred.pid"
+	HostPIDFilepath = "/etc/ogre/ogred.pid"
 )
 
 // AppRoot is set on the init() below to be the path to the project root so that
@@ -38,6 +38,6 @@ const (
 var AppRoot string
 
 func init() {
-    _, base, _, _ := runtime.Caller(0)
-    AppRoot = path.Join(path.Dir(base), "../..") + "/"
+	_, base, _, _ := runtime.Caller(0)
+	AppRoot = path.Join(path.Dir(base), "../..") + "/"
 }

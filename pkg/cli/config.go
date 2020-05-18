@@ -15,13 +15,13 @@ func init() {
 /*
 Below are all the sub commands of ogre related to configurations and are to
 be accessed under command structure like: ogre config [sub-cmd] [flags]
- */
+*/
 
 // top level config, ogre config
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Set and retrieve information about Ogre's configuration.",
-	Long:  `Ogre can be configured to do a number of things, this top level
+	Long: `Ogre can be configured to do a number of things, this top level
 command is used to set or retrieve configuration values at runtime or before
 the Ogre daemon is started.'`,
 	Args: cobra.MinimumNArgs(1),
@@ -45,7 +45,7 @@ var listSubCmd = &cobra.Command{
 var setSubCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set or replace a value in the configuration.",
-	Args: cobra.MinimumNArgs(1),
+	Args:  cobra.MinimumNArgs(1),
 	Long: `Setting or replacing a value WILL NOT be recognized by the daemon
 until the process is restarted or configuration is reloaded. Use key value pairs
 associated by an equal sign and separated by a space if there are multiple.`,

@@ -1,13 +1,13 @@
 package health
 
 import (
-    "context"
-    "github.com/lowellmower/ogre/pkg/log"
-    "github.com/lowellmower/ogre/pkg/types"
-    "os/exec"
-    "strings"
-    "sync"
-    "time"
+	"context"
+	"github.com/lowellmower/ogre/pkg/log"
+	"github.com/lowellmower/ogre/pkg/types"
+	"os/exec"
+	"strings"
+	"sync"
+	"time"
 )
 
 // DockerHealthCheck satisfies the HeathCheck interface and encapsulates the
@@ -106,8 +106,10 @@ func NewDockerHealthCheck(labels map[string]string) []*DockerHealthCheck {
 	for key, val := range labels {
 		splitKey := strings.Split(key, ".")
 		if splitKey[ogre] == "ogre" {
-            // if we got incomplete values passed, bail
-            if len(splitKey) <= space {break}
+			// if we got incomplete values passed, bail
+			if len(splitKey) <= space {
+				break
+			}
 			switch splitKey[space] {
 			case health:
 				hc := &DockerHealthCheck{}
@@ -135,13 +137,13 @@ func (dhc *DockerHealthCheck) setDefaultIfEmpty() {
 	// ogre.health.{in, ex}.check.name
 	// default location to run a check
 	if len(dhc.Destination) == 0 {
-	    log.Service.Info("health check destination was empty, using default 'in' (internal)")
+		log.Service.Info("health check destination was empty, using default 'in' (internal)")
 		dhc.Destination = "in"
 	}
 	// ogre.format.health.{interval}
 	// defaults to 5s check
 	if dhc.Interval == 0 {
-        log.Service.Info("health check interval was empty, using default '5s' (5 seconds)")
+		log.Service.Info("health check interval was empty, using default '5s' (5 seconds)")
 		dhc.Interval = time.Second * 5
 	}
 }
@@ -173,12 +175,16 @@ func parseOutputFromLabels(outputLabels map[string]string) FormatOutput {
 	fo := &FormatOutput{}
 	for key, val := range outputLabels {
 		splitKey := strings.Split(key, ".")
-        // if we got incomplete values passed, bail
-        if len(splitKey) <= space {break}
+		// if we got incomplete values passed, bail
+		if len(splitKey) <= space {
+			break
+		}
 		switch splitKey[space] {
 		case formatHeathOutput:
-		    // if we got incomplete values passed, bail
-			if len(splitKey) <= subSpaceOne {break}
+			// if we got incomplete values passed, bail
+			if len(splitKey) <= subSpaceOne {
+				break
+			}
 			switch splitKey[subSpaceOne] {
 			case formatHealthOutputType:
 				fo.Type = val
@@ -196,11 +202,11 @@ func parseOutputFromLabels(outputLabels map[string]string) FormatOutput {
 // fields, we use some default values in their place for FormatOutput.
 func (fo *FormatOutput) setDefaultIfEmpty() {
 	if len(fo.Type) == 0 {
-        log.Service.Info("format output type missing, using default 'int' (integer)")
+		log.Service.Info("format output type missing, using default 'int' (integer)")
 		fo.Type = "int"
 	}
 	if len(fo.Result) == 0 {
-        log.Service.Info("format output result missing, using default 'exit' (exit code)")
+		log.Service.Info("format output result missing, using default 'exit' (exit code)")
 		fo.Result = "exit"
 	}
 }
@@ -209,8 +215,10 @@ func parsePlatformFromLabels(backendLabels map[string]string) FormatPlatform {
 	fp := &FormatPlatform{}
 	for key, val := range backendLabels {
 		splitKey := strings.Split(key, ".")
-        // if we got incomplete values passed, bail
-        if len(splitKey) <= space {break}
+		// if we got incomplete values passed, bail
+		if len(splitKey) <= space {
+			break
+		}
 		switch splitKey[space] {
 		case formatBackendStatsd:
 			fp.Target = types.StatsdBackend
@@ -218,7 +226,9 @@ func parsePlatformFromLabels(backendLabels map[string]string) FormatPlatform {
 			fp.Target = types.PrometheusBackend
 			// if no other values were provided, bail
 			// ogre.format.backend.{prometheus}="true"
-			if len(splitKey) <= subSpaceOne {break}
+			if len(splitKey) <= subSpaceOne {
+				break
+			}
 
 			switch splitKey[subSpaceOne] {
 			case prometheusMetric:
@@ -242,11 +252,11 @@ func (fp *FormatPlatform) setDefaultIfEmpty() {
 		return
 	case types.PrometheusBackend:
 		if len(fp.Job) == 0 {
-            log.Service.Info("format backend prometheus job missing, using default name 'ogre_job'")
+			log.Service.Info("format backend prometheus job missing, using default name 'ogre_job'")
 			fp.Job = "ogre_job"
 		}
 		if len(fp.Metric) == 0 {
-            log.Service.Info("format backend prometheus metric missing, using default name 'ogre_metric'")
+			log.Service.Info("format backend prometheus metric missing, using default name 'ogre_metric'")
 			fp.Metric = "ogre_metric"
 		}
 		// TODO (lmower): issue #7
@@ -255,7 +265,7 @@ func (fp *FormatPlatform) setDefaultIfEmpty() {
 	case types.HTTPBackend:
 		// TODO (lmower): issue #8
 	default:
-        log.Service.Info("format backend missing, will send health checks to log")
+		log.Service.Info("format backend missing, will send health checks to log")
 		fp.Target = types.DefaultBackend
 	}
 }

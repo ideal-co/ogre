@@ -7,13 +7,13 @@ package types
 type PlatformType string
 
 const (
-    PrometheusBackend PlatformType = "prometheus"
-    StatsdBackend PlatformType = "statsd"
-    CollectdBackend PlatformType = "collectd"
-    HTTPBackend PlatformType = "http"
-    GrafanaBackend PlatformType = "grafana"
-    GraphiteBackend PlatformType = "graphite"
-    DefaultBackend PlatformType = "log"
+	PrometheusBackend PlatformType = "prometheus"
+	StatsdBackend     PlatformType = "statsd"
+	CollectdBackend   PlatformType = "collectd"
+	HTTPBackend       PlatformType = "http"
+	GrafanaBackend    PlatformType = "grafana"
+	GraphiteBackend   PlatformType = "graphite"
+	DefaultBackend    PlatformType = "log"
 )
 
 // MessageType is a string which is used in the constants of this package to
@@ -23,10 +23,10 @@ const (
 type MessageType string
 
 const (
-    DaemonMessage MessageType = "daemon"
-    DockerMessage MessageType = "docker"
-    BackendMessage MessageType = "backend"
-    HostMessage MessageType = "host"
+	DaemonMessage  MessageType = "daemon"
+	DockerMessage  MessageType = "docker"
+	BackendMessage MessageType = "backend"
+	HostMessage    MessageType = "host"
 )
 
 // ServiceType is a string which is used in the constants of this package to
@@ -36,7 +36,7 @@ const (
 type ServiceType string
 
 const (
-    CLI    ServiceType = "CLI"
-    DockerService ServiceType = "docker"
-    BackendService ServiceType = "backend"
+	CLI            ServiceType = "CLI"
+	DockerService  ServiceType = "docker"
+	BackendService ServiceType = "backend"
 )

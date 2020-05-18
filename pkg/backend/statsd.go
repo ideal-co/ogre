@@ -17,7 +17,7 @@ type StatsdBackend struct {
 func NewStatsdClient(addr, prefix string) (Platform, error) {
 	conf := &statsd.ClientConfig{
 		Address: addr,
-		Prefix: prefix,
+		Prefix:  prefix,
 	}
 
 	client, err := statsd.NewClientWithConfig(conf)

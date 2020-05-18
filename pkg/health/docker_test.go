@@ -33,7 +33,7 @@ func TestNewDockerHealthCheck(t *testing.T) {
 		{
 			name: "should return two health checks with defaults",
 			in: map[string]string{
-				"ogre.health.foo.check": "./usr/bin/foo.sh",
+				"ogre.health.foo.check":     "./usr/bin/foo.sh",
 				"ogre.health.foo.bar.check": "./usr/bin/foo_bar.sh",
 			},
 			exp: []*DockerHealthCheck{
@@ -58,7 +58,7 @@ func TestNewDockerHealthCheck(t *testing.T) {
 		{
 			name: "should return a single health check with format configuration statsd",
 			in: map[string]string{
-				"ogre.health.foo.check": "./usr/bin/foo.sh",
+				"ogre.health.foo.check":      "./usr/bin/foo.sh",
 				"ogre.format.backend.statsd": "true",
 			},
 			exp: []*DockerHealthCheck{
@@ -68,7 +68,7 @@ func TestNewDockerHealthCheck(t *testing.T) {
 					RawCmd:      []string{"./usr/bin/foo.sh"},
 					Destination: "in",
 					Interval:    time.Second * 5,
-					Formatter:   newFormatterFromLabels(map[string]string{
+					Formatter: newFormatterFromLabels(map[string]string{
 						"ogre.format.backend.statsd": "true",
 					}),
 				},
@@ -77,7 +77,7 @@ func TestNewDockerHealthCheck(t *testing.T) {
 		{
 			name: "should return a single health check with all format configuration",
 			in: map[string]string{
-				"ogre.health.foo.check": "./usr/bin/foo.sh",
+				"ogre.health.foo.check":                 "./usr/bin/foo.sh",
 				"ogre.format.backend.prometheus.metric": "foo_metric",
 				"ogre.format.backend.prometheus.job":    "foo_job",
 				"ogre.format.health.output.type":        "string",
@@ -90,7 +90,7 @@ func TestNewDockerHealthCheck(t *testing.T) {
 					RawCmd:      []string{"./usr/bin/foo.sh"},
 					Destination: "in",
 					Interval:    time.Second * 5,
-					Formatter:   newFormatterFromLabels(map[string]string{
+					Formatter: newFormatterFromLabels(map[string]string{
 						"ogre.format.backend.prometheus.metric": "foo_metric",
 						"ogre.format.backend.prometheus.job":    "foo_job",
 						"ogre.format.health.output.type":        "string",
@@ -281,7 +281,7 @@ func TestParseOutputFromLabels(t *testing.T) {
 	}{
 		{
 			name: "should return a default from empty labels",
-			in: make(map[string]string),
+			in:   make(map[string]string),
 			exp: FormatOutput{
 				Type:   "int",
 				Result: "exit",
@@ -290,7 +290,7 @@ func TestParseOutputFromLabels(t *testing.T) {
 		{
 			name: "should return a type and default",
 			in: map[string]string{
-				"health.output.type":"string",
+				"health.output.type": "string",
 			},
 			exp: FormatOutput{
 				Type:   "string",
@@ -300,7 +300,7 @@ func TestParseOutputFromLabels(t *testing.T) {
 		{
 			name: "should return a result and default",
 			in: map[string]string{
-				"health.output.result":"return",
+				"health.output.result": "return",
 			},
 			exp: FormatOutput{
 				Type:   "int",
@@ -324,7 +324,7 @@ func TestParsePlatformFromLabels(t *testing.T) {
 	}{
 		{
 			name: "should return a default from empty labels",
-			in: make(map[string]string),
+			in:   make(map[string]string),
 			exp: FormatPlatform{
 				Target: types.DefaultBackend,
 			},
@@ -332,7 +332,7 @@ func TestParsePlatformFromLabels(t *testing.T) {
 		{
 			name: "should return a statsd target",
 			in: map[string]string{
-				"backend.statsd":"true",
+				"backend.statsd": "true",
 			},
 			exp: FormatPlatform{
 				Target: types.StatsdBackend,
@@ -341,37 +341,37 @@ func TestParsePlatformFromLabels(t *testing.T) {
 		{
 			name: "should return a prometheus target and defaults",
 			in: map[string]string{
-				"backend.prometheus":"true",
+				"backend.prometheus": "true",
 			},
 			exp: FormatPlatform{
 				Target: types.PrometheusBackend,
 				Metric: "ogre_metric",
-				Job: "ogre_job",
+				Job:    "ogre_job",
 			},
 		},
 		{
 			name: "should return a prometheus target a metric, and a default",
 			in: map[string]string{
-				"backend.prometheus":"true",
-				"backend.prometheus.metric":"foo_metric_name",
+				"backend.prometheus":        "true",
+				"backend.prometheus.metric": "foo_metric_name",
 			},
 			exp: FormatPlatform{
 				Target: types.PrometheusBackend,
 				Metric: "foo_metric_name",
-				Job: "ogre_job",
+				Job:    "ogre_job",
 			},
 		},
 		{
 			name: "should return a prometheus target a metric and job",
 			in: map[string]string{
-				"backend.prometheus":"true",
-				"backend.prometheus.metric":"foo_metric_name",
-				"backend.prometheus.job":"foo_job_name",
+				"backend.prometheus":        "true",
+				"backend.prometheus.metric": "foo_metric_name",
+				"backend.prometheus.job":    "foo_job_name",
 			},
 			exp: FormatPlatform{
 				Target: types.PrometheusBackend,
 				Metric: "foo_metric_name",
-				Job: "foo_job_name",
+				Job:    "foo_job_name",
 			},
 		},
 	}

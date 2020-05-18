@@ -55,7 +55,7 @@ Note: ensure you have made any custom configurations before running start.'`,
 		}
 		defer f.Close()
 
-		if _, err = f.WriteString(strconv.Itoa(proc.Pid)+"\n"); err != nil {
+		if _, err = f.WriteString(strconv.Itoa(proc.Pid) + "\n"); err != nil {
 			fmt.Println("Err: ", err)
 			return err
 		}

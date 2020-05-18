@@ -349,7 +349,7 @@ func (ds *DockerService) execExternalCheck(chk *health.DockerHealthCheck) (healt
 	// make a copy of the command to reset after exec
 	var copyCmd exec.Cmd
 	copyCmd = *chk.Cmd
-	defer func(){
+	defer func() {
 		chk.Cmd = &copyCmd
 	}()
 

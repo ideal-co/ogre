@@ -7,7 +7,6 @@ import (
 	"github.com/lowellmower/ogre/pkg/types"
 )
 
-
 // Service is the interface which all services will implement.
 type Service interface {
 	Type() types.ServiceType
@@ -21,8 +20,8 @@ type Service interface {
 type ServiceCallback func() error
 
 type Context struct {
-	Ctx context.Context
-	Cancel context.CancelFunc
+	Ctx      context.Context
+	Cancel   context.CancelFunc
 	Callback ServiceCallback
 }
 
@@ -47,8 +46,8 @@ func NewService(s types.ServiceType, in, out, err chan msg.Message) (Service, er
 func NewDefaultContext() *Context {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Context{
-		Ctx: ctx,
-		Cancel: cancel,
+		Ctx:      ctx,
+		Cancel:   cancel,
 		Callback: nil,
 	}
 }
