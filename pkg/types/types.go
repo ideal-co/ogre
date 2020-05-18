@@ -1,5 +1,9 @@
 package types
 
+// PlatformType is a string which is used in the constants of this package to
+// implement a typing of sorts on platforms. Anything which implements the
+// backend.Platform interface will return this type from its implementation of
+// the Type() method.
 type PlatformType string
 
 const (
@@ -12,7 +16,10 @@ const (
     DefaultBackend PlatformType = "log"
 )
 
-
+// MessageType is a string which is used in the constants of this package to
+// implement a typing of sorts on messages. Anything which implements the
+// msg.Message interface will return this type from its implementation of the
+// Type() method.
 type MessageType string
 
 const (
@@ -22,6 +29,10 @@ const (
     HostMessage MessageType = "host"
 )
 
+// ServiceType is a string which is used in the constants of this package to
+// implement a typing of sorts on services. Anything which implements the
+// srvc.Service interface will return this type from its implementation of
+// the Type() method.
 type ServiceType string
 
 const (
