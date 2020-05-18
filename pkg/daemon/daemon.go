@@ -68,7 +68,7 @@ func (d *Daemon) ListenSocket() {
 
 	daemon, err := net.Listen("unix", ogredSock)
 	if err != nil {
-		log.Daemon.Fatal("could not start listener on %s: %s", ogredSock, err)
+		log.Daemon.Fatalf("could not start listener on %s: %s", ogredSock, err)
 	}
 
 	// clean up files
@@ -100,8 +100,18 @@ func (d *Daemon) Deserialize(data []byte) (msg.Message, error) {
 func (d *Daemon) runServices() {
 	for _, srv := range d.services {
 		go func(s srvc.Service) {
-			s.Start()
+			if err := s.Start(); err != nil {
+				log.Daemon.Errorf("could not start service %s", s.Type())
+			}
 		}(srv)
+	}
+}
+
+func (d *Daemon) stopServices() {
+	for _, s := range d.services {
+		if err := s.Stop(); err != nil {
+			log.Daemon.Errorf("encountered error stopping service %s: %s", s.Type(), err)
+		}
 	}
 }
 
@@ -109,10 +119,13 @@ func (d *Daemon) handleMessage(c net.Conn) {
 	defer c.Close()
 	var buf bytes.Buffer
 
-	io.Copy(&buf, c)
+	if _, err := io.Copy(&buf, c); err != nil {
+		log.Daemon.Errorf("error copying message: %s", err)
+	}
+
 	m, err := d.Deserialize(buf.Bytes())
 	if err != nil {
-		log.Daemon.Error(err)
+		log.Daemon.Errorf("encountered error deserializing message: %s", err)
 	}
 
 	d.In <- m
@@ -122,28 +135,24 @@ func (d *Daemon) listenChannel() {
 	for {
 		select {
 		case <-d.ctx.Done():
-			log.Daemon.Trace("context marked as done")
-			// move to func
-			for _, s := range d.services {
-				s.Stop()
-			}
-
-			return
+			d.stopServices()
+			// TODO (lmower): determine if we want to do anything with the ctx.Err
+			//                and ctx.Callback or if these are unnecessary
 			//d.Err <- d.ctx.Err
 			//d.Err <- d.ctx.Callback
+			return
 		case eMsg := <-d.Err:
 			// this error channel should be used to signal terminal errors which result in
 			// more drastic action from the daemon like attempted restarts or shutdowns
 			// other less impacting errors should be sent over the Daemon.In channel and
 			// the Message interface Err() should be checked for a nil value
-			log.Daemon.Fatalf("daemon received fatal error from %s service: %s", eMsg.Type(), eMsg.Error())
+			log.Daemon.Fatalf("daemon received fatal error from %s: %s", eMsg.Type(), eMsg.Error())
 		case m := <-d.In:
 			// check if a non-fatal error was sent
 			if m.Error() != nil {
 				log.Daemon.Errorf("daemon received error from %s service: %s", m.Type(), m.Error())
+				continue
 			}
-
-			log.Daemon.Tracef("listenChannel got message %+v", m)
 
 			d.directIncomingMsg(m)
 		}
