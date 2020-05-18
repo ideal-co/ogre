@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Microsoft/go-winio v0.4.14 // indirect
+	github.com/cactus/go-statsd-client/statsd v0.0.0-20200423205355-cb0885a1018c
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0 // indirect
