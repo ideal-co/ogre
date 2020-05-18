@@ -71,12 +71,14 @@ func TestBackendService_listen(t *testing.T) {
         },
     }
     for _, io := range testIO {
-        io.test(io.ch, io.inp)
-        m := msg.NewBackendMessage(io.hc, io.inp.Type())
-        io.ch <- m
-        completed := io.inp.(*MockPlatform).Check
-        assert.Equal(t, completed.String(), io.hc.Result)
-        assert.Equal(t, completed.ExitCode(), io.hc.Exit)
-        assert.Equal(t, completed.Passed(), io.hc.Pass)
+        t.Run(io.name, func(t *testing.T) {
+            io.test(io.ch, io.inp)
+            m := msg.NewBackendMessage(io.hc, io.inp.Type())
+            io.ch <- m
+            completed := io.inp.(*MockPlatform).Check
+            assert.Equal(t, completed.String(), io.hc.Result)
+            assert.Equal(t, completed.ExitCode(), io.hc.Exit)
+            assert.Equal(t, completed.Passed(), io.hc.Pass)
+        })
     }
 }
