@@ -18,19 +18,29 @@ type BackendService struct {
     err chan msg.Message
 }
 
+// Start is the BackendService implementation of the Service interface's Start
+// method and calls out to a private method listen.
 func (bes *BackendService) Start() error {
+    log.Service.Infof("starting %s service", bes.Type())
     bes.listen()
     return nil
 }
 
+// Stop is the BackendService implementation of the Service interface's Stop
 func (bes *BackendService) Stop() error {
+    log.Service.Infof("stopping %s service", bes.Type())
+    bes.ctx.Cancel()
     return nil
 }
 
+// Type is the BackendService implementation of the Service interface's Type
 func (bes *BackendService) Type() types.ServiceType {
     return types.BackendService
 }
 
+// NewBackendService takes three channels of Messages which connect to the
+// Daemon and returns a pointer to a BackendService and an error which is nil
+// upon success.
 func NewBackendService(out, in, errChan chan msg.Message) (*BackendService, error) {
     return &BackendService{
         Platforms: make(map[types.PlatformType]backend.Platform),
@@ -41,20 +51,21 @@ func NewBackendService(out, in, errChan chan msg.Message) (*BackendService, erro
     }, nil
 }
 
+// listen is kicked off from the Service interface Run method which will begin
+// an infinite loop
 func (bes *BackendService) listen() {
     for {
         select {
+        case <-bes.ctx.Done():
+            return
         case m := <-bes.in:
             bem := m.(msg.BackendMessage)
-            log.Service.WithField("service", types.BackendService).Tracef("backend listen got %+v", bem)
+            log.Service.WithField("service", bem.Type()).Tracef("backend listen got %+v", bem)
 
             if be, ok := bes.Platforms[bem.Destination]; ok {
-                err := be.Send(m)
-                if err != nil {
-                    log.Service.Errorf("could not send message to %s: %s", bem.Destination, err)
+                if err := be.Send(m); err != nil {
+                    log.Service.Errorf("could not send message to %s from %s: %s", bem.Destination, bes.Type(), err)
                 }
-            } else {
-                log.Service.Infof("%s", bem.CompletedCheck.String())
             }
         }
     }
