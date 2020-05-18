@@ -5,6 +5,7 @@ import (
 	"github.com/moogar0880/venom"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 var Daemon = &venom.Venom{}
@@ -27,7 +28,16 @@ func writeDefaultConfig() {
 		if err != nil {
 			panic("could not read ogre configuration: " + err.Error())
 		}
-		if err = ioutil.WriteFile(install.HostConfigDir+f.Name(), data, os.FileMode(os.O_RDWR)); err != nil {
+		hostFile := filepath.Join(install.HostConfigDir, f.Name())
+		if _, err := os.Stat(hostFile); err != nil {
+			if err = os.MkdirAll(install.HostConfigDir, os.FileMode(os.O_RDWR)); err != nil {
+				panic("config dir did not exist and could not be created: " + err.Error())
+			}
+			if _, err = os.Create(hostFile); err != nil {
+				panic("config file did not exist and could not be created: " + err.Error())
+			}
+		}
+		if err = ioutil.WriteFile(hostFile, data, os.FileMode(os.O_RDWR)); err != nil {
 			panic("could not read ogre configuration: " + err.Error())
 		}
 	}
