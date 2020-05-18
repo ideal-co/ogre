@@ -76,7 +76,8 @@ func (mc *MockClient) ContainerList(ctx context.Context, options types.Container
 }
 
 func (mc *MockClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecConfig) (types.HijackedResponse, error) {
-	mc.On("ContainerExecAttach", ctx, execID, config).Return(mc.TypeMap["exec_attach"], nil)
+	resp := mc.TypeMap["exec_attach"].(types.HijackedResponse)
+	mc.On("ContainerExecAttach", ctx, execID, config).Return(resp, nil)
 	args := mc.Mock.Called(ctx, execID, config)
 	return args.Get(0).(types.HijackedResponse), args.Error(1)
 }
@@ -94,7 +95,7 @@ func (mc *MockClient) ContainerExecInspect(ctx context.Context, execID string) (
 }
 
 func TestCollectContainers(t *testing.T) {
-	testIO := []struct {
+	tesio := []struct {
 		name string
 		dsrv *DockerService
 		inp  map[string]interface{}
@@ -249,7 +250,7 @@ func TestCollectContainers(t *testing.T) {
 							Hostname: "fooBar",
 							Labels: map[string]string{
 								"ogre.health.in.test.check.two": "echo foo",
-								"ogre.format.backend.statsd": "true",
+								"ogre.format.backend.statsd":    "true",
 							},
 						},
 					},
@@ -262,7 +263,7 @@ func TestCollectContainers(t *testing.T) {
 			cont: 2,
 		},
 	}
-	for _, io := range testIO {
+	for _, io := range tesio {
 		t.Run(io.name, func(t *testing.T) {
 			containers, err := io.test(io.dsrv, io.inp)
 			assert.Nil(t, err, "error was not nil %s", err)
@@ -279,3 +280,65 @@ func TestCollectContainers(t *testing.T) {
 		})
 	}
 }
+
+/*
+TODO (lmower): there are some issues with testing the ContainerExecAttach interface
+               and returning a HijackedResponse. This needs a bit more tooling to
+               be truly useful and the Docker API lib sadly doesn't even test this
+               particular interface so we lack some direction. See the linked issue
+               for tracking this work: https://github.com/ideal-co/ogre/issues/14
+
+var pingResp = `PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.024 ms
+
+--- 127.0.0.1 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.024/0.024/0.024/0.000 ms`
+
+func TestExecInternalCheck(t *testing.T) {
+	tesio := []struct {
+		name string
+		dsrv *DockerService
+		inp  map[string]interface{}
+		test func(ds *DockerService, args map[string]interface{}, cmd []string) (health.ExecResult, error)
+		cmd  []string
+		exp  health.ExecResult
+	}{
+		{
+			name: "should return a non nil exec result",
+			dsrv: &DockerService{
+				ctx: NewDefaultContext(),
+			},
+			inp: map[string]interface{}{
+				"exec_create": types.IDResponse{ID: "fooBarExecID"},
+				"exec_attach": types.HijackedResponse{
+
+				},
+				"exec_inspect": types.ContainerExecInspect{
+					ExecID:      "fooBarExecID",
+					ContainerID: runningID,
+					ExitCode:    0,
+				},
+			},
+			test: func(ds *DockerService, args map[string]interface{}, cmd []string) (health.ExecResult, error) {
+				ds.Client = NewMockClient(args)
+				return ds.execInternalCheck(context.Background(), runningID, cmd)
+			},
+			exp: health.ExecResult{
+				Exit:   0,
+				StdOut: pingResp,
+				StdErr: "",
+			},
+		},
+	}
+
+	for _, io := range tesio {
+		t.Run(io.name, func(t *testing.T) {
+			result, err := io.test(io.dsrv, io.inp, io.cmd)
+			assert.Nil(t, err, "err from execInternalCheck was not nil")
+			//assert.Equal(t, result.StdOut, io.exp.StdOut, "result out did not match had: %s expected %s", result.StdOut, io.exp.StdOut)
+			assert.Equal(t, result.Exit, io.exp.Exit)
+		})
+	}
+}
+ */
