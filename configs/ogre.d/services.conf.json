@@ -1,8 +1,0 @@
-{
-  "log": {
-    "level": "info",
-    "file": "/var/log/service.log",
-    "silent": false,
-    "report_caller": false
-  }
-}

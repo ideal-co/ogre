@@ -60,13 +60,16 @@ func (bes *BackendService) listen() {
 			return
 		case m := <-bes.in:
 			bem := m.(msg.BackendMessage)
+			dest := bem.Destination
 			log.Service.WithField("service", bem.Type()).Tracef("backend listen got %+v", bem)
 
-			if be, ok := bes.Platforms[bem.Destination]; ok {
+			if be, ok := bes.Platforms[dest]; ok {
 				if err := be.Send(m); err != nil {
-					log.Service.Errorf("could not send message to %s from %s: %s", bem.Destination, bes.Type(), err)
+					log.Service.Errorf("could not send message to %s: %s", dest, err)
 				}
+				continue
 			}
+			log.Service.Errorf("no backend %s, ensure backend %s is running and able to accept data", dest, dest)
 		}
 	}
 }

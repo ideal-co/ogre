@@ -1,4 +1,0 @@
-{
-  "dockerd_socket": "/run/docker.sock",
-  "containerd_socket": "/run/containerd/containerd.sock"
-}
