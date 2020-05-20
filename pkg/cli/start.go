@@ -5,12 +5,9 @@ import (
 	"github.com/lowellmower/ogre/pkg/config"
 	"github.com/lowellmower/ogre/pkg/daemon"
 	"github.com/lowellmower/ogre/pkg/install"
-	"github.com/lowellmower/ogre/pkg/log"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 )
 
 // add all commands to root command in cmd/ogre/root.go
@@ -27,14 +24,21 @@ will be returned to this command as well as the daemon log file.
 
 Note: ensure you have made any custom configurations before running start.'`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ogrePID := config.Daemon.GetString(daemon.OgredPIDFile)
-
-		// check if daemon is already running
-		if pidFile, _ := os.Stat(ogrePID); pidFile != nil {
-			data, _ := ioutil.ReadFile(pidFile.Name())
-			pid := strings.Trim(string(data), "\n")
-			log.Daemon.Infof("ogre daemon running since %s with PID: %s", pidFile.ModTime(), pid)
-			return fmt.Errorf("ogre daemon running since %s with PID: %s", pidFile.ModTime(), pid)
+		var ogredPIDFile string
+		// check if daemon is already running using possible config value
+		if ogrePID, ok := config.Daemon.Find(daemon.OgredPIDFile); ok {
+			ogredPIDFile = ogrePID.(string)
+			if msg, exist := ogrePIDFileExist(ogrePID.(string)); exist {
+				fmt.Printf("ogred already running %s", msg)
+				return nil
+			}
+		} else {
+			// otherwise use default values
+			ogredPIDFile = install.HostPIDFilepath
+			if msg, exist := ogrePIDFileExist(install.HostPIDFilepath); exist {
+				fmt.Printf("ogred already running %s", msg)
+				return nil
+			}
 		}
 
 		argv := make([]string, len(args)+1)
@@ -48,7 +52,7 @@ Note: ensure you have made any custom configurations before running start.'`,
 			return err
 		}
 
-		f, err := os.Create(ogrePID)
+		f, err := os.Create(ogredPIDFile)
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return err
@@ -67,4 +71,11 @@ Note: ensure you have made any custom configurations before running start.'`,
 
 		return nil
 	},
+}
+
+func ogrePIDFileExist(file string) (string, bool) {
+	if pidFile, _ := os.Stat(file); pidFile != nil {
+		return fmt.Sprintf("since %s, PID at: %s\n", pidFile.ModTime(), file), true
+	}
+	return "", false
 }
