@@ -1,4 +1,6 @@
 {
+  "dockerd_socket": "/run/docker.sock",
+  "containerd_socket": "/run/containerd/containerd.sock",
   "ogred_socket": "/var/run/ogred.sock",
   "ogred_pid": "/etc/ogre/ogred.pid",
   "log": {
@@ -7,10 +9,22 @@
     "silent": false,
     "report_caller": false
   },
-  "backends": {
-    "statsd": {
+  "backends": [
+    {
+      "type": "statsd",
       "server": "127.0.0.1:8125",
       "prefix": "ogre"
     }
-  }
+  ],
+  "services": [
+    {
+      "type": "docker",
+      "log": {
+        "level": "trace",
+        "file": "/var/log/service.log",
+        "silent": false,
+        "report_caller": false
+      }
+    }
+  ]
 }
