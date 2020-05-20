@@ -49,6 +49,8 @@ func init() {
 		Daemon = newLogrusLogger(config.Daemon)
 	}
 	if Service == nil {
+		// TODO (lmower): determine how we want to handle individual service
+		//                configurgations passed in as a slice, or at all
 		Service = newLogrusLogger(config.Service)
 	}
 }
