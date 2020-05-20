@@ -1,14 +1,18 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/lowellmower/ogre/pkg/config"
+	"github.com/lowellmower/ogre/pkg/install"
 	"github.com/spf13/cobra"
-	"strings"
+	"io/ioutil"
+	"os"
 )
 
 // add all commands to root command in cmd/ogre/root.go
 func init() {
-	configCmd.AddCommand(listSubCmd, setSubCmd)
+	configCmd.AddCommand(listSubCmd)
 	rootCmd.AddCommand(configCmd)
 }
 
@@ -30,33 +34,50 @@ the Ogre daemon is started.'`,
 	},
 }
 
-// TODO (lmower): read config from disk and print to stdout
 // sub command list, ogre config list
 var listSubCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Print out the configuration values currently set.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("printing config list...")
+		conf := &config.DaemonConfig{}
+		configPath := install.HostConfigDir + install.OgredConfig
+		if info, _ := os.Stat(configPath); info != nil {
+			data, err := ioutil.ReadFile(configPath)
+			if err != nil {
+				panic(err)
+			}
+			err = json.Unmarshal(data, conf)
+			if err != nil {
+				panic(err)
+			}
+			pretty, err := json.MarshalIndent(conf, "", "    ")
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(string(pretty))
+			return
+		}
+		fmt.Printf("no config at %s, run 'ogre start' to get started", configPath)
 	},
 }
 
-// TODO (lmower): actually have this set some value and persist state
-// sub command set, ogre config set [args]
-var setSubCmd = &cobra.Command{
-	Use:   "set",
-	Short: "Set or replace a value in the configuration.",
-	Args:  cobra.MinimumNArgs(1),
-	Long: `Setting or replacing a value WILL NOT be recognized by the daemon
-until the process is restarted or configuration is reloaded. Use key value pairs
-associated by an equal sign and separated by a space if there are multiple.`,
-	Example: "config set dockerd_socket=/var/run/docker.sock dhcp_ports=68,67",
-	Run: func(cmd *cobra.Command, args []string) {
-		for _, arg := range args {
-			kv := strings.Split(arg, "=")
-			if len(kv) != 2 {
-				continue
-			}
-			fmt.Printf("Key: %s, Val: %s\n", kv[0], kv[1])
-		}
-	},
-}
+//// TODO (lmower): actually have this set some value and persist state
+//// sub command set, ogre config set [args]
+//var setSubCmd = &cobra.Command{
+//	Use:   "set",
+//	Short: "Set or replace a value in the configuration.",
+//	Args:  cobra.MinimumNArgs(1),
+//	Long: `Setting or replacing a value WILL NOT be recognized by the daemon
+//until the process is restarted or configuration is reloaded. Use key value pairs
+//associated by an equal sign and separated by a space if there are multiple.`,
+//	Example: "config set dockerd_socket=/var/run/docker.sock dhcp_ports=68,67",
+//	Run: func(cmd *cobra.Command, args []string) {
+//		for _, arg := range args {
+//			kv := strings.Split(arg, "=")
+//			if len(kv) != 2 {
+//				continue
+//			}
+//			fmt.Printf("Key: %s, Val: %s\n", kv[0], kv[1])
+//		}
+//	},
+//}
