@@ -126,6 +126,7 @@ func (d *Daemon) handleMessage(c net.Conn) {
 	m, err := d.Deserialize(buf.Bytes())
 	if err != nil {
 		log.Daemon.Errorf("encountered error deserializing message: %s", err)
+		return
 	}
 
 	d.In <- m
