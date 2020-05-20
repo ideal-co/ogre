@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/lowellmower/ogre/pkg/config"
 	"github.com/lowellmower/ogre/pkg/daemon"
-	"github.com/lowellmower/ogre/pkg/log"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"
@@ -27,22 +26,21 @@ var stopCmd = &cobra.Command{
 		ogredPID := config.Daemon.GetString(daemon.OgredPIDFile)
 
 		defer func() {
-			f, err := ioutil.ReadFile(ogredPID)
+			data, err := ioutil.ReadFile(ogredPID)
 			if err != nil {
-				log.Daemon.Error(err)
+				fmt.Println(err)
+				return
 			}
 
-			fmt.Println(strings.Trim(string(f), "\n"))
-			pid, err := strconv.Atoi(strings.Trim(string(f), "\n"))
+			fmt.Printf("stopping process: %s", string(data))
+			pid, err := strconv.Atoi(strings.Trim(string(data), "\n"))
 			if err != nil {
-				fmt.Println("PID CONVERSION ERR")
-				log.Daemon.Error(err)
+				fmt.Println(err)
 			}
 
 			err = syscall.Kill(pid, syscall.SIGKILL)
 			if err != nil {
-				fmt.Println("PID KILL ERR")
-				log.Daemon.Error(err)
+				fmt.Println(err)
 			}
 
 			os.RemoveAll(ogredPID)
