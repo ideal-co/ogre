@@ -1,11 +1,10 @@
 package log
 
 import (
-	"fmt"
+	"github.com/lowellmower/ogre/pkg/config"
 	"github.com/moogar0880/venom"
 	"os"
 
-	"github.com/lowellmower/ogre/pkg/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,10 +45,12 @@ var Service *logrus.Logger
 // ideally want to be able to isolate logs and should make a logging mechanism
 // per service or properly structure the daemon log to isolate parts of logs.
 func init() {
-	Daemon = newLogrusLogger(config.Daemon)
-	fmt.Printf("Logging ogred at level: %s\n", Daemon.Level.String())
-	Service = newLogrusLogger(config.Service)
-	fmt.Printf("Logging services at level: %s\n", Service.Level.String())
+	if Daemon == nil {
+		Daemon = newLogrusLogger(config.Daemon)
+	}
+	if Service == nil {
+		Service = newLogrusLogger(config.Service)
+	}
 }
 
 // newLogrusLogger takes a pointer to a venom config and returns a pointer to an
