@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"github.com/lowellmower/ogre/pkg/config"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -31,9 +30,6 @@ func Run() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
-	}
-	if ddSock, exist := config.Daemon.Find("dockerd_socket"); exist {
-		fmt.Println("Docker Socket: ", ddSock)
 	}
 }
 
