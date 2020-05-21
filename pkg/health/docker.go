@@ -172,7 +172,7 @@ func newFormatterFromLabels(labels map[string]string) *DockerFormatter {
 }
 
 func parseOutputFromLabels(outputLabels map[string]string) FormatOutput {
-	fo := &FormatOutput{}
+	fo := FormatOutput{}
 	for key, val := range outputLabels {
 		splitKey := strings.Split(key, ".")
 		// if we got incomplete values passed, bail
@@ -195,7 +195,7 @@ func parseOutputFromLabels(outputLabels map[string]string) FormatOutput {
 	}
 	fo.setDefaultIfEmpty()
 
-	return *fo
+	return fo
 }
 
 // setDefaultIfEmpty ensures that if labels were not passed to configure these

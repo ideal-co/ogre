@@ -168,6 +168,8 @@ func (d *Daemon) collectServices() {
 	// TODO (lmower): gather desired services from configuration which will
 	//                change the signature to something like:
 	//                srvc.NewService(config.Daemon.GetString("services"), d.In, d.ctx)
+
+	// our default services which will always be made
 	srvMap := map[types.ServiceType]types.MessageType{
 		types.DockerService:  types.DockerMessage,
 		types.BackendService: types.BackendMessage,
