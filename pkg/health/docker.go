@@ -222,6 +222,8 @@ func parsePlatformFromLabels(backendLabels map[string]string) FormatPlatform {
 		switch splitKey[space] {
 		case formatBackendStatsd:
 			fp.Target = types.StatsdBackend
+		case formatBackendHTTP:
+			fp.Target = types.HTTPBackend
 		case formatBackendProm:
 			fp.Target = types.PrometheusBackend
 			// if no other values were provided, bail
@@ -250,6 +252,9 @@ func (fp *FormatPlatform) setDefaultIfEmpty() {
 	case types.StatsdBackend:
 		// Do nothing, we only need to indicate this is our desired platform
 		return
+	case types.HTTPBackend:
+		// Do nothing, we only need to indicate this is our desired platform
+		return
 	case types.PrometheusBackend:
 		if len(fp.Job) == 0 {
 			log.Service.Info("format backend prometheus job missing, using default name 'ogre_job'")
@@ -262,8 +267,6 @@ func (fp *FormatPlatform) setDefaultIfEmpty() {
 		// TODO (lmower): issue #7
 	case types.CollectdBackend:
 		// TODO (lmower): issue #9
-	case types.HTTPBackend:
-		// TODO (lmower): issue #8
 	default:
 		log.Service.Info("format backend missing, will send health checks to log")
 		fp.Target = types.DefaultBackend

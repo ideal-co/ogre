@@ -42,8 +42,8 @@ func (dm DockerMessage) Deserialize(data []byte) (Message, error) {
 
 func NewDockerMessage(m events.Message, msg string) Message {
 	return DockerMessage{
-		Event: m,
-		Actor: m.Actor,
+		Event:  m,
+		Actor:  m.Actor,
 		Action: msg,
 	}
 }
