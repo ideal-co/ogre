@@ -165,18 +165,29 @@ func (ds *DockerService) collectContainers() ([]*Container, error) {
 
 	// gather info on containers
 	for _, c := range containers {
-		info, err := ds.Client.ContainerInspect(ds.ctx.Ctx, c.ID)
+		newCont, err := ds.getContainerFromInfo(c.ID)
 		if err != nil {
 			log.Service.WithField("service", internalTypes.DockerService).Errorf("could not get info for %s: %s", c.ID, err)
 			continue
 		}
 
-		if newCont := NewContainer(info); newCont != nil {
-			cList = append(cList, newCont)
-		}
+		cList = append(cList, newCont)
 	}
 
 	return cList, nil
+}
+
+func (ds *DockerService) getContainerFromInfo(cid string) (*Container, error) {
+	info, err := ds.Client.ContainerInspect(ds.ctx.Ctx, cid)
+	if err != nil {
+		return nil, err
+	}
+
+	if newCont := NewContainer(info); newCont != nil {
+		return newCont, nil
+	}
+
+	return nil, internalTypes.ErrNoCheck
 }
 
 // listen is called by the Start() method and will begin a loop to listen for
@@ -193,8 +204,17 @@ func (ds *DockerService) listen() {
 			dm := m.(msg.DockerMessage)
 			log.Service.WithField("service", internalTypes.DockerService).Tracef("docker listen got %+v", m)
 			switch dm.Action {
-			case "health":
-				// TODO (lmower) is this an action we want to take?
+			case "start-health":
+				cont, err := ds.getContainerFromInfo(dm.Actor.ID)
+				if err != nil {
+					log.Service.WithField("service", internalTypes.DockerService).Errorf("could not get check on container start: %s", err)
+					continue
+				}
+
+				ds.RunningChecks[cont.ID] = cont.ctx.Cancel
+				go ds.startChecking(cont)
+			case "stop-health":
+				ds.stopContainerChecking(dm.Actor.ID)
 			case "stop":
 				ds.stopAllChecking()
 				signal <- struct{}{}
@@ -233,29 +253,24 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 			return
 		case err := <-errChan:
 			log.Service.WithField("service", internalTypes.DockerService).Tracef("err in listen %s\n", err)
-			ds.err <- msg.NewDockerMessage(events.Message{}, err)
+			ds.err <- msg.NewDockerMessage(events.Message{}, err.Error())
 		case dEvent := <-dockerEvents:
 			switch dEvent.Type {
 			// Container Events from Docker API
 			case events.ContainerEventType:
 				switch dEvent.Action {
 				case "start":
-					// Add a container to the list being monitored should the label
-					// indicating it should be monitored exist
-					// TODO (lmower): Issue: https://github.com/ideal-co/ogre/issues/12
-					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
-					ds.out <- msg.NewDockerMessage(dEvent, nil)
+					ds.out <- msg.NewDockerMessage(dEvent, "start-health")
 				case "restart":
+					// TODO (lmower): decide if there is action we want to take here, possibly track
+					//                flapping containers or restarts over a period of time?
 					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
-					ds.out <- msg.NewDockerMessage(dEvent, nil)
 				case "stop":
-					// TODO (lmower): Issue: https://github.com/ideal-co/ogre/issues/12
 					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
-					ds.out <- msg.NewDockerMessage(dEvent, nil)
+					ds.out <- msg.NewDockerMessage(dEvent, "stop-health")
 				case "die":
-					// TODO (lmower): Issue: https://github.com/ideal-co/ogre/issues/12
 					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
-					ds.out <- msg.NewDockerMessage(dEvent, nil)
+					ds.out <- msg.NewDockerMessage(dEvent, "stop-health")
 				// introduced in docker v1.12 (2016)
 				case "health_status":
 					// TODO (lmower): need to decide what to do on any health status event recieved
@@ -264,13 +279,15 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 					//                which fields could be available
 					//                Issue: https://github.com/ideal-co/ogre/issues/12
 					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
-					ds.out <- msg.NewDockerMessage(dEvent, nil)
+					ds.out <- msg.NewDockerMessage(dEvent, dEvent.Action)
 				}
 			}
 		}
 	}
 }
 
+// listenHealthChecks iterates over the DockerService's containers and kicks
+// off the listening loop for all health checks for each container.
 func (ds *DockerService) listenHealthChecks() {
 	for _, c := range ds.Containers {
 		if _, ok := ds.RunningChecks[c.ID]; !ok {
@@ -280,18 +297,25 @@ func (ds *DockerService) listenHealthChecks() {
 	}
 }
 
+// startChecking takes a pointer to a container and kicks of a go routine for
+// each health check associated with that container.
 func (ds *DockerService) startChecking(c *Container) {
 	for _, chk := range c.HealthChecks {
 		go ds.startCheckLoop(c, chk)
 	}
 }
 
+// stopContainerChecking takes a string representing a container ID and stops
+// a particular containers health checks by means of the associated context's
+// cancel function.
 func (ds *DockerService) stopContainerChecking(cid string) {
 	if cancel, ok := ds.RunningChecks[cid]; ok {
 		cancel()
 	}
 }
 
+// stopAllChecking stops all running health checks by means of the associated
+// context's cancel function.
 func (ds *DockerService) stopAllChecking() {
 	for cid, cancel := range ds.RunningChecks {
 		log.Service.WithField("service", internalTypes.DockerService).Infof("stopping check for %s", cid)
@@ -384,13 +408,14 @@ func (ds *DockerService) execExternalCheck(chk *health.DockerHealthCheck) (healt
 	return result, nil
 }
 
-// execInternalCheck takes a point to a Container and a DockerHealthCheck and
+// execInternalCheck takes a context.Context associated with a Container, a
+// string representing the container's ID, and a slice of string which is the
+// command associated with the DockerHealthCheck for that container. The method
 // returns an ExecResult and an error, the latter of which will be nil upon
 // successful execution of the health check. The command associated with the
 // DockerHealthCheck will be executed inside of the container and the result of
 // that command (exit code, stdout, stderr) will be passed to the ExecResult
 // and stored on the DockerHealthCheck struct for reporting to the backend.
-// c *Container, chk *health.DockerHealthCheck
 func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd []string) (health.ExecResult, error) {
 	var result health.ExecResult
 	execConf := dockerTypes.ExecConfig{
