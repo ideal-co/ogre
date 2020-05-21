@@ -16,6 +16,12 @@ NOTE: the backend config stanza
       "type": "statsd",
       "server": "127.0.0.1:8125",
       "prefix": "ogre"
+    },
+    {
+      "type": "http",
+      "server": "127.0.0.1:9009",
+      "format": "json",
+      "resource_path": "/health"
     }
   ]
 */
@@ -32,6 +38,13 @@ var DefaultConfigConst = `
     "silent": false,
     "report_caller": false
   },
+  "backends": [
+    {
+      "type": "statsd",
+      "server": "127.0.0.1:8125",
+      "prefix": "foo-noodle"
+    }
+  ],
   "services": [
     {
       "type": "docker",
@@ -70,11 +83,20 @@ type LogConfig struct {
 // could be used to configure a backend. Required fields do not have the
 // omitempty decorator and must be present.
 type BackendConfig struct {
+	// shared
 	Type   string `json:"type"`
 	Server string `json:"server"`
+
+	// statsd
 	Prefix string `json:"prefix,omitempty"`
+
+	// prometheus
 	Job    string `json:"job,omitempty"`
 	Metric string `json:"metric,omitempty"`
+
+	// http(s)
+	Format       string `json:"format,omitempty"`
+	ResourcePath string `json:"resource_path,omitempty"`
 }
 
 // ServiceConfig is the structural representation of a service in the config
@@ -88,6 +110,8 @@ type ServiceConfig struct {
 // our application wide config values
 var Daemon = &venom.Venom{}
 var Service = &venom.Venom{}
+
+var DaemonConf = &DaemonConfig{}
 
 // init for the config package will attempt to load config from the default file
 // path or, if that does not exist, load it from the string literal of defaults
@@ -108,6 +132,13 @@ func init() {
 // LoadConfig makes the assumption there is a file in place at the default file
 // path for config, /etc/ogre/ogre.d/ogred.conf.json
 func LoadConfig() {
+	data, err := ioutil.ReadFile(install.HostConfigDir + install.OgredConfig)
+	if err != nil {
+		panic(err)
+	}
+	if err = json.Unmarshal(data, DaemonConf); err != nil {
+		panic(err)
+	}
 	Daemon = readConfig(install.HostConfigDir + install.OgredConfig)
 	// TODO (lmower): determine use case for separate service config
 	//                duplicating daemon config for now.
@@ -125,8 +156,8 @@ func LoadDefaults() {
 }
 
 func writeFromMemory() {
-	var conf = &DaemonConfig{}
-	if err := json.Unmarshal([]byte(DefaultConfigConst), conf); err != nil {
+	//var conf = &DaemonConfig{}
+	if err := json.Unmarshal([]byte(DefaultConfigConst), DaemonConf); err != nil {
 		panic(err)
 	}
 	hostFile := filepath.Join(install.HostConfigDir, install.OgredConfig)
@@ -138,7 +169,7 @@ func writeFromMemory() {
 			panic("config file did not exist and could not be created: " + err.Error())
 		}
 	}
-	data, err := json.MarshalIndent(conf, "", "    ")
+	data, err := json.MarshalIndent(DaemonConf, "", "    ")
 	if err != nil {
 		panic("could not unmarshal default config: " + err.Error())
 	}
