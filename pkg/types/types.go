@@ -1,5 +1,7 @@
 package types
 
+import "errors"
+
 // PlatformType is a string which is used in the constants of this package to
 // implement a typing of sorts on platforms. Anything which implements the
 // backend.Platform interface will return this type from its implementation of
@@ -40,3 +42,6 @@ const (
 	DockerService  ServiceType = "docker"
 	BackendService ServiceType = "backend"
 )
+
+// Error types
+var ErrNoCheck = errors.New("no check health was present or parsed")
