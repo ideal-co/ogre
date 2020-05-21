@@ -40,10 +40,10 @@ func (dm DockerMessage) Deserialize(data []byte) (Message, error) {
 	return dm, nil
 }
 
-func NewDockerMessage(m events.Message, e error) Message {
+func NewDockerMessage(m events.Message, msg string) Message {
 	return DockerMessage{
 		Event: m,
 		Actor: m.Actor,
-		Err:   e,
+		Action: msg,
 	}
 }
