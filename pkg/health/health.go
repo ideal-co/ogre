@@ -21,6 +21,7 @@ const (
 	prometheusJob     = "job"
 
 	formatBackendStatsd = "statsd"
+	formatBackendHTTP   = "http"
 
 	formatHeathOutput   = "output"
 	formatHeathInterval = "interval"

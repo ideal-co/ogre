@@ -9,6 +9,7 @@ import (
 type BackendMessage struct {
 	CompletedCheck health.HealthCheck
 	Destination    types.PlatformType
+	Data           health.ExecResult
 	Err            error
 }
 
@@ -25,7 +26,10 @@ func (bm BackendMessage) Error() error {
 }
 
 func (bm BackendMessage) Serialize() ([]byte, error) {
-	return json.Marshal(bm)
+	m := BackendMessage{
+		Data: bm.CompletedCheck.(*health.DockerHealthCheck).Result,
+	}
+	return json.Marshal(m)
 }
 
 func (bm BackendMessage) Deserialize(data []byte) (Message, error) {
