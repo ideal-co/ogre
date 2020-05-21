@@ -8,6 +8,7 @@ import (
 	"github.com/lowellmower/ogre/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 type MockCompletedHC struct {
@@ -75,6 +76,9 @@ func TestBackendService_listen(t *testing.T) {
 			io.test(io.ch, io.inp)
 			m := msg.NewBackendMessage(io.hc, io.inp.Type())
 			io.ch <- m
+			// just enough time to avoid racing on the channel
+			time.Sleep(200 * time.Millisecond)
+
 			completed := io.inp.(*MockPlatform).Check
 			assert.Equal(t, completed.String(), io.hc.Result)
 			assert.Equal(t, completed.ExitCode(), io.hc.Exit)
