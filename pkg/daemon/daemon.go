@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/lowellmower/ogre/pkg/backend"
 	"github.com/lowellmower/ogre/pkg/config"
 	"github.com/lowellmower/ogre/pkg/log"
@@ -188,17 +189,21 @@ func (d *Daemon) collectServices() {
 
 func (d *Daemon) establishClients() {
 	bes := d.services[types.BackendService].(*srvc.BackendService)
-	// get statsd backend client if configured
-	if addr, ok := config.Daemon.Store.Find("backends.statsd.server"); ok {
-		platform, err := backend.NewBackendClient(types.StatsdBackend, addr.(string))
-		if err != nil {
-			log.Daemon.Fatalf("could not get statsd backend: %s", err)
+
+	// check to see if there were user provided backends
+	if config.DaemonConf.Backends != nil {
+		for _, bEnd := range config.DaemonConf.Backends {
+			platform, err := backend.NewBackendClient(types.PlatformType(bEnd.Type), bEnd)
+			if err != nil {
+				fmt.Printf("ogred not started check daemon log at %s\n", config.DaemonConf.Log.File)
+				log.Daemon.Fatalf("could not get backend %s: %s", bEnd.Type, err)
+			}
+			bes.Platforms[platform.Type()] = platform
 		}
-		bes.Platforms[types.StatsdBackend] = platform
 	}
 
 	// always set up the default backend (log)
-	platform, err := backend.NewBackendClient(types.DefaultBackend, "")
+	platform, err := backend.NewBackendClient(types.DefaultBackend, config.BackendConfig{})
 	if err != nil {
 		log.Daemon.Fatalf("cannot start daemon %s", err)
 	}
