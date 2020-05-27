@@ -358,7 +358,7 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 				log.Service.WithField("service", internalTypes.DockerService).Tracef("EXTERN CHECK: %+v", chk)
 				result.Hostname = c.Name
 				chk.Result = result
-				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target)
+				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target, result)
 			} else {
 				result, err := ds.execInternalCheck(c.ctx.Ctx, c.ID, chk.Cmd.Args)
 				if err != nil {
@@ -367,7 +367,7 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 				}
 				result.Hostname = c.Name
 				chk.Result = result
-				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target)
+				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target, result)
 			}
 		}
 	}
