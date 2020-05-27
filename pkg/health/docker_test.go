@@ -79,7 +79,7 @@ func TestNewDockerHealthCheck(t *testing.T) {
 			in: map[string]string{
 				"ogre.health.foo.check":                 "./usr/bin/foo.sh",
 				"ogre.format.backend.prometheus.metric": "foo_metric",
-				"ogre.format.backend.prometheus.job":    "foo_job",
+				"ogre.format.backend.prometheus.label":  "foo_job",
 				"ogre.format.health.output.type":        "string",
 				"ogre.format.health.output.result":      "return",
 			},
@@ -92,7 +92,7 @@ func TestNewDockerHealthCheck(t *testing.T) {
 					Interval:    time.Second * 5,
 					Formatter: newFormatterFromLabels(map[string]string{
 						"ogre.format.backend.prometheus.metric": "foo_metric",
-						"ogre.format.backend.prometheus.job":    "foo_job",
+						"ogre.format.backend.prometheus.label":  "foo_job",
 						"ogre.format.health.output.type":        "string",
 						"ogre.format.health.output.result":      "return",
 					}),
@@ -206,14 +206,14 @@ func TestNewFormatterFromLabels(t *testing.T) {
 				Platform: FormatPlatform{
 					Target: types.PrometheusBackend,
 					Metric: "foo_bar",
-					Job:    "ogre_job",
+					Label:  "ogre_job",
 				},
 			},
 		},
 		{
 			name: "should make a formatter for prometheus with default metric",
 			in: map[string]string{
-				"ogre.format.backend.prometheus.job": "foo_bar",
+				"ogre.format.backend.prometheus.label": "foo_bar",
 			},
 			exp: &DockerFormatter{
 				Output: FormatOutput{
@@ -223,7 +223,7 @@ func TestNewFormatterFromLabels(t *testing.T) {
 				Platform: FormatPlatform{
 					Target: types.PrometheusBackend,
 					Metric: "ogre_metric",
-					Job:    "foo_bar",
+					Label:  "foo_bar",
 				},
 			},
 		},
@@ -240,7 +240,7 @@ func TestNewFormatterFromLabels(t *testing.T) {
 				Platform: FormatPlatform{
 					Target: types.PrometheusBackend,
 					Metric: "ogre_metric",
-					Job:    "ogre_job",
+					Label:  "ogre_job",
 				},
 			},
 		},
@@ -248,7 +248,7 @@ func TestNewFormatterFromLabels(t *testing.T) {
 			name: "should make a fully configured formatter for prometheus",
 			in: map[string]string{
 				"ogre.format.backend.prometheus.metric": "foo_metric",
-				"ogre.format.backend.prometheus.job":    "foo_job",
+				"ogre.format.backend.prometheus.label":  "foo_job",
 				"ogre.format.health.output.type":        "string",
 				"ogre.format.health.output.result":      "return",
 			},
@@ -260,7 +260,7 @@ func TestNewFormatterFromLabels(t *testing.T) {
 				Platform: FormatPlatform{
 					Target: types.PrometheusBackend,
 					Metric: "foo_metric",
-					Job:    "foo_job",
+					Label:  "foo_job",
 				},
 			},
 		},
@@ -346,7 +346,7 @@ func TestParsePlatformFromLabels(t *testing.T) {
 			exp: FormatPlatform{
 				Target: types.PrometheusBackend,
 				Metric: "ogre_metric",
-				Job:    "ogre_job",
+				Label:  "ogre_job",
 			},
 		},
 		{
@@ -358,7 +358,7 @@ func TestParsePlatformFromLabels(t *testing.T) {
 			exp: FormatPlatform{
 				Target: types.PrometheusBackend,
 				Metric: "foo_metric_name",
-				Job:    "ogre_job",
+				Label:  "ogre_job",
 			},
 		},
 		{
@@ -366,12 +366,12 @@ func TestParsePlatformFromLabels(t *testing.T) {
 			in: map[string]string{
 				"backend.prometheus":        "true",
 				"backend.prometheus.metric": "foo_metric_name",
-				"backend.prometheus.job":    "foo_job_name",
+				"backend.prometheus.label":  "foo_job_name",
 			},
 			exp: FormatPlatform{
 				Target: types.PrometheusBackend,
 				Metric: "foo_metric_name",
-				Job:    "foo_job_name",
+				Label:  "foo_job_name",
 			},
 		},
 	}
