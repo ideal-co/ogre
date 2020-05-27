@@ -23,11 +23,11 @@ type BackendClient interface {
 func NewBackendClient(pType types.PlatformType, conf config.BackendConfig) (Platform, error) {
 	switch pType {
 	case types.StatsdBackend:
-		// check to see if there is a configured prefix for statsd
 		return NewStatsdClient(conf.Server, conf.Prefix)
 	case types.HTTPBackend:
-		//format := config.Daemon.GetString("backends.http.format")
 		return NewHTTPBackend(conf.Server, conf.ResourcePath, conf.Format)
+	case types.PrometheusBackend:
+		return NewPrometheusBackend(conf.Server, conf.Metric, conf.ResourcePath)
 	case types.DefaultBackend:
 		// our default backend should be the service log but without the logrus
 		// formatting when messages are written.
