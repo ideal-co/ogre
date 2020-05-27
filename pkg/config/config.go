@@ -18,6 +18,12 @@ NOTE: the backend config stanza
       "prefix": "ogre"
     },
     {
+      "type": "prometheus",
+      "server": "127.0.0.1:9099",
+	  "metric": "east_coast_ogre_checks",
+      "resource_path": "/metrics"
+    },
+    {
       "type": "http",
       "server": "127.0.0.1:9009",
       "format": "json",
@@ -91,7 +97,7 @@ type BackendConfig struct {
 	Prefix string `json:"prefix,omitempty"`
 
 	// prometheus
-	Job    string `json:"job,omitempty"`
+	Label  string `json:"label,omitempty"`
 	Metric string `json:"metric,omitempty"`
 
 	// http(s)

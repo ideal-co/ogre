@@ -9,7 +9,7 @@ import (
 type BackendMessage struct {
 	CompletedCheck health.HealthCheck
 	Destination    types.PlatformType
-	Data           health.ExecResult
+	Data           *health.ExecResult
 	Err            error
 }
 
@@ -40,10 +40,11 @@ func (bm BackendMessage) Deserialize(data []byte) (Message, error) {
 	return bm, nil
 }
 
-func NewBackendMessage(hc health.HealthCheck, dest types.PlatformType) Message {
+func NewBackendMessage(hc health.HealthCheck, dest types.PlatformType, er *health.ExecResult) Message {
 	return BackendMessage{
 		CompletedCheck: hc,
 		Destination:    dest,
+		Data:           er,
 		Err:            nil,
 	}
 }

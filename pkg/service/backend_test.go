@@ -74,7 +74,8 @@ func TestBackendService_listen(t *testing.T) {
 	for _, io := range testIO {
 		t.Run(io.name, func(t *testing.T) {
 			io.test(io.ch, io.inp)
-			m := msg.NewBackendMessage(io.hc, io.inp.Type())
+			res := &health.ExecResult{}
+			m := msg.NewBackendMessage(io.hc, io.inp.Type(), res)
 			io.ch <- m
 			// just enough time to avoid racing on the channel
 			time.Sleep(200 * time.Millisecond)

@@ -15,20 +15,22 @@ LABEL ogre.health.ex.unique.check.two="nc -vz 172.17.0.3 8000"
 # inside the container
 LABEL ogre.health.unique.check.three="echo inside"
 
-# space separated values will convert to prometheus style like "metric_name" and
-# the above health checks will report like:
-#
-# metric_name{label="unique_check_one"} 0
-# metric_name{label="unique_check_two"} 1
-# metric_name{label="unique_check_one"} 0 
+# to enable the health checks to be reported to prometheus use the label
+# LABEL ogre.format.backend.prometheus="true"
+
+# Currently the below is not supported but may be offered as another unique label
+# in a future iteration, for now use the ogre config file
 # LABEL ogre.format.backend.prometheus.metric="metric name"
 
-# if ogre is configured to send directly to a prometheus server, you can include
-# a job name which will convert spaces to underscores. If no job name is provided
-# then ogre will attempt to send under the job name 'ogre'
-# LABEL ogre.format.backend.prometheus.job="job name"
+# Currently the below is not supported but may be offered as another unique label
+# in a future iteration, for now use the ogre config file
+# LABEL ogre.format.backend.prometheus.label="label name"
 
-LABEL ogre.format.backend.statsd="true"
+# enable the statsd backend
+# LABEL ogre.format.backend.statsd="true"
+
+# enable a generic http backend which can accept json via a POST request
+# LABEL ogre.format.backend.http="true"
 
 # if you could like to collect the output of healthchecks and send that value you
 # can format the health checks like below
@@ -41,7 +43,6 @@ LABEL ogre.format.backend.statsd="true"
 #
 # (collect output from the command as a float)
 # LABEL ogre.format.health.output.type="float"
-
 
 # inform ogre to collect the exit code of health checks (default)
 LABEL ogre.format.health.output.result="exit"
