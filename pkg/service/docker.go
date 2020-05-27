@@ -196,6 +196,7 @@ func (ds *DockerService) getContainerFromInfo(cid string) (*Container, error) {
 func (ds *DockerService) listen() {
 	signal := make(chan struct{})
 	go ds.listenDockerAPI(signal)
+	// ds.registerCollectors()
 	go ds.listenHealthChecks()
 	defer close(signal)
 	for {
@@ -216,6 +217,7 @@ func (ds *DockerService) listen() {
 			case "stop-health":
 				ds.stopContainerChecking(dm.Actor.ID)
 			case "stop":
+				// ds.unregisterCollectors()
 				ds.stopAllChecking()
 				signal <- struct{}{}
 				ds.ctx = NewDefaultContext()
@@ -227,6 +229,7 @@ func (ds *DockerService) listen() {
 					continue
 				}
 				ds.Containers = containers
+				// ds.registerCollectors()
 				go ds.listenHealthChecks()
 			case "shutdown":
 				ds.ctx.Cancel()
@@ -353,6 +356,7 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 					continue
 				}
 				log.Service.WithField("service", internalTypes.DockerService).Tracef("EXTERN CHECK: %+v", chk)
+				result.Hostname = c.Name
 				chk.Result = result
 				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target)
 			} else {
@@ -361,6 +365,7 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
 					continue
 				}
+				result.Hostname = c.Name
 				chk.Result = result
 				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target)
 			}
@@ -368,7 +373,7 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 	}
 }
 
-func (ds *DockerService) execExternalCheck(chk *health.DockerHealthCheck) (health.ExecResult, error) {
+func (ds *DockerService) execExternalCheck(chk *health.DockerHealthCheck) (*health.ExecResult, error) {
 	var result health.ExecResult
 	// make a copy of the command to reset after exec
 	var copyCmd exec.Cmd
@@ -383,29 +388,29 @@ func (ds *DockerService) execExternalCheck(chk *health.DockerHealthCheck) (healt
 
 	err := chk.Cmd.Start()
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	err = chk.Cmd.Wait()
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	stdout, err := ioutil.ReadAll(&outBuf)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	stderr, err := ioutil.ReadAll(&errBuf)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	result.Exit = chk.Cmd.ProcessState.ExitCode()
 	result.StdOut = string(stdout)
 	result.StdErr = string(stderr)
 
-	return result, nil
+	return &result, nil
 }
 
 // execInternalCheck takes a context.Context associated with a Container, a
@@ -416,7 +421,7 @@ func (ds *DockerService) execExternalCheck(chk *health.DockerHealthCheck) (healt
 // DockerHealthCheck will be executed inside of the container and the result of
 // that command (exit code, stdout, stderr) will be passed to the ExecResult
 // and stored on the DockerHealthCheck struct for reporting to the backend.
-func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd []string) (health.ExecResult, error) {
+func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd []string) (*health.ExecResult, error) {
 	var result health.ExecResult
 	execConf := dockerTypes.ExecConfig{
 		User:         "root",
@@ -431,13 +436,13 @@ func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd 
 	exec, err := ds.Client.ContainerExecCreate(ctx, cid, execConf)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error creating check on container %s: %s", cid, err)
-		return result, err
+		return nil, err
 	}
 	// execute the command and get hijacked response
 	hijack, err := ds.Client.ContainerExecAttach(ctx, exec.ID, execConf)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error attaching exec: %s", err)
-		return result, err
+		return nil, err
 	}
 	defer hijack.Close()
 
@@ -449,23 +454,23 @@ func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd 
 
 	stdout, err := ioutil.ReadAll(&outBuf)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	stderr, err := ioutil.ReadAll(&errBuf)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	// get the exit code from the exec
 	res, err := ds.Client.ContainerExecInspect(ctx, exec.ID)
 	if err != nil {
 		log.Service.WithField("service", internalTypes.DockerService).Tracef("error inspecting exec: %s", err)
-		return result, err
+		return nil, err
 	}
 
 	result.Exit = res.ExitCode
 	result.StdOut = string(stdout)
 	result.StdErr = string(stderr)
 
-	return result, nil
+	return &result, nil
 }
