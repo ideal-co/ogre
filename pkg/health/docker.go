@@ -35,7 +35,7 @@ type DockerHealthCheck struct {
 	Formatter *DockerFormatter
 
 	// the outcome of a health check's command
-	Result ExecResult
+	Result *ExecResult
 
 	mu sync.Mutex
 }
@@ -50,9 +50,10 @@ type DockerFormatter struct {
 // ExecResult is the encapsulating struct used to capture the output from a command
 // run internal or external to a container.
 type ExecResult struct {
-	Exit   int
-	StdOut string
-	StdErr string
+	Hostname string
+	Exit     int
+	StdOut   string
+	StdErr   string
 }
 
 // FormatOutput is the struct representation of the ogre.format.output.$ labels.
@@ -66,8 +67,8 @@ type FormatPlatform struct {
 	Target types.PlatformType
 	// Metric will only be set for types.PrometheusBackend
 	Metric string
-	// Job will only be set for types.PrometheusBackend
-	Job string
+	// Label will only be set for types.PrometheusBackend
+	Label string
 }
 
 func (dhc *DockerHealthCheck) String() string {
@@ -167,7 +168,7 @@ func newFormatterFromLabels(labels map[string]string) *DockerFormatter {
 		}
 	}
 	f := newDockerFormatter(fmtBackendMap, fmtHealthMap)
-
+	log.Daemon.Tracef("FORMATTER: %+v", *f)
 	return f
 }
 
@@ -234,10 +235,11 @@ func parsePlatformFromLabels(backendLabels map[string]string) FormatPlatform {
 
 			switch splitKey[subSpaceOne] {
 			case prometheusMetric:
-				fp.Metric = val
-			case prometheusJob:
-				fp.Job = val
+				fp.Metric = strings.Join(strings.Split(val, " "), "_")
+			case prometheusLabel:
+				fp.Label = strings.Join(strings.Split(val, " "), "_")
 			}
+
 		}
 	}
 	fp.setDefaultIfEmpty()
@@ -256,15 +258,14 @@ func (fp *FormatPlatform) setDefaultIfEmpty() {
 		// Do nothing, we only need to indicate this is our desired platform
 		return
 	case types.PrometheusBackend:
-		if len(fp.Job) == 0 {
+		if len(fp.Label) == 0 {
 			log.Service.Info("format backend prometheus job missing, using default name 'ogre_job'")
-			fp.Job = "ogre_job"
+			fp.Label = "ogre_job"
 		}
 		if len(fp.Metric) == 0 {
 			log.Service.Info("format backend prometheus metric missing, using default name 'ogre_metric'")
 			fp.Metric = "ogre_metric"
 		}
-		// TODO (lmower): issue #7
 	case types.CollectdBackend:
 		// TODO (lmower): issue #9
 	default:
