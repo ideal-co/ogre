@@ -18,7 +18,7 @@ const (
 
 	formatBackendProm = "prometheus"
 	prometheusMetric  = "metric"
-	prometheusJob     = "job"
+	prometheusLabel   = "label"
 
 	formatBackendStatsd = "statsd"
 	formatBackendHTTP   = "http"
