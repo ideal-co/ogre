@@ -9,7 +9,7 @@ import (
 type BackendMessage struct {
 	CompletedCheck health.HealthCheck
 	Destination    types.PlatformType
-	Data           health.ExecResult
+	Data           *health.ExecResult
 	Err            error
 }
 
@@ -44,6 +44,7 @@ func NewBackendMessage(hc health.HealthCheck, dest types.PlatformType) Message {
 	return BackendMessage{
 		CompletedCheck: hc,
 		Destination:    dest,
+		Data:           hc.(*health.DockerHealthCheck).Result,
 		Err:            nil,
 	}
 }
