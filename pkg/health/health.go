@@ -1,5 +1,7 @@
 package health
 
+// NOTE: these constants are the values used in docker label parsing and could
+// probably be in a better place than the health package.
 const (
 	ogre          int = iota // 0 -> 'ogre'
 	space                    // 1 -> 'health, format'

@@ -115,12 +115,13 @@ func NewDockerHealthCheck(labels map[string]string) []*DockerHealthCheck {
 			case health:
 				hc := &DockerHealthCheck{}
 				hc.Formatter = formatter
+				// get checks from labels 'ogre.health.*'
 				hc.parseHealthCheck(splitKey[subSpaceOne], splitKey[subSpaceOne:], val)
 				if interval, ok := labels["ogre.format.health.interval"]; ok {
 					dur, err := time.ParseDuration(interval)
 					hc.Interval = dur
 					if err != nil {
-						log.Service.Errorf("could not parse time %s from label", interval)
+						log.Daemon.Errorf("could not parse time %s from label", interval)
 						hc.Interval = 5 * time.Second
 					}
 
@@ -134,23 +135,29 @@ func NewDockerHealthCheck(labels map[string]string) []*DockerHealthCheck {
 	return checks
 }
 
+// setDefaultIfEmpty sets and fields of a DockerHealthCheck should they be empty.
 func (dhc *DockerHealthCheck) setDefaultIfEmpty() {
 	// ogre.health.{in, ex}.check.name
 	// default location to run a check
 	if len(dhc.Destination) == 0 {
-		log.Service.Info("health check destination was empty, using default 'in' (internal)")
+		log.Daemon.Info("health check destination was empty, using default 'in' (internal)")
 		dhc.Destination = "in"
 	}
 	// ogre.format.health.{interval}
 	// defaults to 5s check
 	if dhc.Interval == 0 {
-		log.Service.Info("health check interval was empty, using default '5s' (5 seconds)")
+		log.Daemon.Info("health check interval was empty, using default '5s' (5 seconds)")
 		dhc.Interval = time.Second * 5
 	}
 }
 
+// newFormatterFromLabels takes a map of string string representing Docker labels
+// and returns a pointer to a DockerFormatter should any of those labels contain
+// the prefix 'ogre' in the key.
 func newFormatterFromLabels(labels map[string]string) *DockerFormatter {
+	// fmtBackendMap tracks labels 'ogre.format.backend.*'
 	fmtBackendMap := make(map[string]string)
+	// fmtHealthMap tracks labels 'ogre.format.health.*'
 	fmtHealthMap := make(map[string]string)
 
 	for key, val := range labels {
@@ -167,11 +174,14 @@ func newFormatterFromLabels(labels map[string]string) *DockerFormatter {
 			}
 		}
 	}
-	f := newDockerFormatter(fmtBackendMap, fmtHealthMap)
-	log.Daemon.Tracef("FORMATTER: %+v", *f)
-	return f
+
+	// pass out collected label to constructor
+	return newDockerFormatter(fmtBackendMap, fmtHealthMap)
 }
 
+// parseOutputFromLabels takes a subset of the Docker labels parsed from a
+// container and returns a FormatOutput should any contain the prefix 'ogre'
+// followed by the dot separated string 'format.output' in the key.
 func parseOutputFromLabels(outputLabels map[string]string) FormatOutput {
 	fo := FormatOutput{}
 	for key, val := range outputLabels {
@@ -203,15 +213,18 @@ func parseOutputFromLabels(outputLabels map[string]string) FormatOutput {
 // fields, we use some default values in their place for FormatOutput.
 func (fo *FormatOutput) setDefaultIfEmpty() {
 	if len(fo.Type) == 0 {
-		log.Service.Info("format output type missing, using default 'int' (integer)")
+		log.Daemon.Info("format output type missing, using default 'int' (integer)")
 		fo.Type = "int"
 	}
 	if len(fo.Result) == 0 {
-		log.Service.Info("format output result missing, using default 'exit' (exit code)")
+		log.Daemon.Info("format output result missing, using default 'exit' (exit code)")
 		fo.Result = "exit"
 	}
 }
 
+// parsePlatformFromLabels takes a subset of the Docker labels parsed from a
+// container and returns a FormatPlatform should any contain the prefix 'ogre'
+// followed by the dot separated string 'format.backend' in the key.
 func parsePlatformFromLabels(backendLabels map[string]string) FormatPlatform {
 	fp := &FormatPlatform{}
 	for key, val := range backendLabels {
@@ -259,21 +272,26 @@ func (fp *FormatPlatform) setDefaultIfEmpty() {
 		return
 	case types.PrometheusBackend:
 		if len(fp.Label) == 0 {
-			log.Service.Info("format backend prometheus job missing, using default name 'ogre_job'")
+			log.Daemon.Info("format backend prometheus job missing, using default name 'ogre_job'")
 			fp.Label = "ogre_job"
 		}
 		if len(fp.Metric) == 0 {
-			log.Service.Info("format backend prometheus metric missing, using default name 'ogre_metric'")
+			log.Daemon.Info("format backend prometheus metric missing, using default name 'ogre_metric'")
 			fp.Metric = "ogre_metric"
 		}
 	case types.CollectdBackend:
 		// TODO (lmower): issue #9
 	default:
-		log.Service.Info("format backend missing, will send health checks to log")
+		log.Daemon.Info("format backend missing, will send health checks to log")
 		fp.Target = types.DefaultBackend
 	}
 }
 
+// parseHealthCheck takes a string representing where a health check should be
+// run, i.e. internal or external to a container, a slice of strings representing
+// the name of that health check, and a space separated string representing the
+// command. These values are then parsed and set on the DockerHealthCheck fields
+// accordingly. Should a destination not be passed, a default of internal is used.
 func (dhc *DockerHealthCheck) parseHealthCheck(dest string, name []string, cmd string) {
 	dhc.Ctx, dhc.cancel = context.WithCancel(context.Background())
 	switch dest {
