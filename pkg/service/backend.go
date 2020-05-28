@@ -21,14 +21,14 @@ type BackendService struct {
 // Start is the BackendService implementation of the Service interface's Start
 // method and calls out to a private method listen.
 func (bes *BackendService) Start() error {
-	log.Service.Infof("starting %s service", bes.Type())
+	log.Daemon.Infof("starting %s service", bes.Type())
 	bes.listen()
 	return nil
 }
 
 // Stop is the BackendService implementation of the Service interface's Stop
 func (bes *BackendService) Stop() error {
-	log.Service.Infof("stopping %s service", bes.Type())
+	log.Daemon.Infof("stopping %s service", bes.Type())
 	bes.ctx.Cancel()
 	return nil
 }
@@ -61,15 +61,15 @@ func (bes *BackendService) listen() {
 		case m := <-bes.in:
 			bem := m.(msg.BackendMessage)
 			dest := bem.Destination
-			log.Service.WithField("service", bem.Type()).Tracef("backend listen got %+v", bem)
+			log.Daemon.WithField("service", bem.Type()).Tracef("backend listen got %+v", bem)
 
 			if be, ok := bes.Platforms[dest]; ok {
 				if err := be.Send(m); err != nil {
-					log.Service.Errorf("could not send message to %s: %s", dest, err)
+					log.Daemon.Errorf("could not send message to %s: %s", dest, err)
 				}
 				continue
 			}
-			log.Service.Errorf("no backend %s, ensure backend %s is running and able to accept data", dest, dest)
+			log.Daemon.Errorf("no backend %s, ensure backend %s is running and able to accept data", dest, dest)
 		}
 	}
 }

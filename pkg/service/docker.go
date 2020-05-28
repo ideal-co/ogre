@@ -79,7 +79,7 @@ func (ds *DockerService) Type() internalTypes.ServiceType {
 // of a channel of msg.Message which the Err() implementation returns a non-nil
 // value.
 func (ds *DockerService) Start() error {
-	log.Service.Infof("starting %s service", ds.Type())
+	log.Daemon.Infof("starting %s service", ds.Type())
 	ds.listen()
 	return nil
 }
@@ -92,7 +92,7 @@ func (ds *DockerService) Start() error {
 // Cancel() method on the context associated with the DockerService, which is
 // independent of the context associated with the Daemon or any other Service.
 func (ds *DockerService) Stop() error {
-	log.Service.Infof("stopping %s service", ds.Type())
+	log.Daemon.Infof("stopping %s service", ds.Type())
 	ds.in <- msg.DockerMessage{Action: "shutdown"}
 	return nil
 }
@@ -167,7 +167,7 @@ func (ds *DockerService) collectContainers() ([]*Container, error) {
 	for _, c := range containers {
 		newCont, err := ds.getContainerFromInfo(c.ID)
 		if err != nil {
-			log.Service.WithField("service", internalTypes.DockerService).Errorf("could not get info for %s: %s", c.ID, err)
+			log.Daemon.WithField("service", internalTypes.DockerService).Errorf("could not get info for %s: %s", c.ID, err)
 			continue
 		}
 
@@ -203,12 +203,12 @@ func (ds *DockerService) listen() {
 		select {
 		case m := <-ds.in:
 			dm := m.(msg.DockerMessage)
-			log.Service.WithField("service", internalTypes.DockerService).Tracef("docker listen got %+v", m)
+			log.Daemon.WithField("service", internalTypes.DockerService).Tracef("docker listen got %+v", m)
 			switch dm.Action {
 			case "start-health":
 				cont, err := ds.getContainerFromInfo(dm.Actor.ID)
 				if err != nil {
-					log.Service.WithField("service", internalTypes.DockerService).Errorf("could not get check on container start: %s", err)
+					log.Daemon.WithField("service", internalTypes.DockerService).Errorf("could not get check on container start: %s", err)
 					continue
 				}
 
@@ -225,7 +225,7 @@ func (ds *DockerService) listen() {
 				go ds.listenDockerAPI(signal)
 				containers, err := ds.collectContainers()
 				if err != nil {
-					log.Service.WithField("service", internalTypes.DockerService).Errorf("error getting containers on start: %s", err)
+					log.Daemon.WithField("service", internalTypes.DockerService).Errorf("error getting containers on start: %s", err)
 					continue
 				}
 				ds.Containers = containers
@@ -252,10 +252,10 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 			//       ds.ctx.Ctx passed to ds.Client.Events above but
 			//       this is also the service level context so we must
 			//       not cancel it. Simply returning for now.
-			log.Service.WithField("service", internalTypes.DockerService).Trace("stopping container listener...")
+			log.Daemon.WithField("service", internalTypes.DockerService).Trace("stopping container listener...")
 			return
 		case err := <-errChan:
-			log.Service.WithField("service", internalTypes.DockerService).Tracef("err in listen %s\n", err)
+			log.Daemon.WithField("service", internalTypes.DockerService).Tracef("err in listen %s\n", err)
 			ds.err <- msg.NewDockerMessage(events.Message{}, err.Error())
 		case dEvent := <-dockerEvents:
 			switch dEvent.Type {
@@ -267,12 +267,12 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 				case "restart":
 					// TODO (lmower): decide if there is action we want to take here, possibly track
 					//                flapping containers or restarts over a period of time?
-					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
+					log.Daemon.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 				case "stop":
-					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
+					log.Daemon.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, "stop-health")
 				case "die":
-					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
+					log.Daemon.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, "stop-health")
 				// introduced in docker v1.12 (2016)
 				case "health_status":
@@ -281,7 +281,7 @@ func (ds *DockerService) listenDockerAPI(signal chan struct{}) {
 					//                is provided in a Dockerfile. Below comment is structure for
 					//                which fields could be available
 					//                Issue: https://github.com/ideal-co/ogre/issues/12
-					log.Service.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
+					log.Daemon.WithField("service", internalTypes.DockerService).Infof("docker action %s\n", dEvent.Action)
 					ds.out <- msg.NewDockerMessage(dEvent, dEvent.Action)
 				}
 			}
@@ -321,7 +321,7 @@ func (ds *DockerService) stopContainerChecking(cid string) {
 // context's cancel function.
 func (ds *DockerService) stopAllChecking() {
 	for cid, cancel := range ds.RunningChecks {
-		log.Service.WithField("service", internalTypes.DockerService).Infof("stopping check for %s", cid)
+		log.Daemon.WithField("service", internalTypes.DockerService).Infof("stopping check for %s", cid)
 		cancel()
 		delete(ds.RunningChecks, cid)
 	}
@@ -342,27 +342,27 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 	for {
 		select {
 		case <-ds.ctx.Done():
-			log.Service.WithField("service", internalTypes.DockerService).Tracef("service stopped, stopping checks for container %s", c.Name)
+			log.Daemon.WithField("service", internalTypes.DockerService).Tracef("service stopped, stopping checks for container %s", c.Name)
 			return
 		case <-c.ctx.Done():
-			log.Service.WithField("service", internalTypes.DockerService).Tracef("stopping container checks for %s", c.Name)
+			log.Daemon.WithField("service", internalTypes.DockerService).Tracef("stopping container checks for %s", c.Name)
 			tick.Stop()
 			return
 		case <-tick.C:
 			if chk.Destination == "ex" {
 				result, err := ds.execExternalCheck(chk)
 				if err != nil {
-					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
+					log.Daemon.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
 					continue
 				}
-				log.Service.WithField("service", internalTypes.DockerService).Tracef("EXTERN CHECK: %+v", chk)
+				log.Daemon.WithField("service", internalTypes.DockerService).Tracef("EXTERN CHECK: %+v", chk)
 				result.Hostname = c.Name
 				chk.Result = result
 				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target, result)
 			} else {
 				result, err := ds.execInternalCheck(c.ctx.Ctx, c.ID, chk.Cmd.Args)
 				if err != nil {
-					log.Service.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
+					log.Daemon.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
 					continue
 				}
 				result.Hostname = c.Name
@@ -435,13 +435,13 @@ func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd 
 	// create the exec instance
 	exec, err := ds.Client.ContainerExecCreate(ctx, cid, execConf)
 	if err != nil {
-		log.Service.WithField("service", internalTypes.DockerService).Tracef("error creating check on container %s: %s", cid, err)
+		log.Daemon.WithField("service", internalTypes.DockerService).Tracef("error creating check on container %s: %s", cid, err)
 		return nil, err
 	}
 	// execute the command and get hijacked response
 	hijack, err := ds.Client.ContainerExecAttach(ctx, exec.ID, execConf)
 	if err != nil {
-		log.Service.WithField("service", internalTypes.DockerService).Tracef("error attaching exec: %s", err)
+		log.Daemon.WithField("service", internalTypes.DockerService).Tracef("error attaching exec: %s", err)
 		return nil, err
 	}
 	defer hijack.Close()
@@ -449,7 +449,7 @@ func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd 
 	// use docker api lib to trim prepending bytes from message
 	var outBuf, errBuf bytes.Buffer
 	if _, e := stdcopy.StdCopy(&outBuf, &errBuf, hijack.Reader); e != nil {
-		log.Service.Errorf("error copying check output: %s", e)
+		log.Daemon.Errorf("error copying check output: %s", e)
 	}
 
 	stdout, err := ioutil.ReadAll(&outBuf)
@@ -464,7 +464,7 @@ func (ds *DockerService) execInternalCheck(ctx context.Context, cid string, cmd 
 	// get the exit code from the exec
 	res, err := ds.Client.ContainerExecInspect(ctx, exec.ID)
 	if err != nil {
-		log.Service.WithField("service", internalTypes.DockerService).Tracef("error inspecting exec: %s", err)
+		log.Daemon.WithField("service", internalTypes.DockerService).Tracef("error inspecting exec: %s", err)
 		return nil, err
 	}
 
