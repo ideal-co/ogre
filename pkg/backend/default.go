@@ -20,6 +20,8 @@ func NewDefaultBackend(log io.Writer) (Platform, error) {
 	return &DefaultBackend{Logger: log}, nil
 }
 
+// Type is the DefaultBackend implementation of the Platform interface Type
+// and returns a PlatformType of type DefaultBackend.
 func (dbe *DefaultBackend) Type() types.PlatformType {
 	return types.DefaultBackend
 }

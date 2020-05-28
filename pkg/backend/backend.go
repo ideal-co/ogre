@@ -31,7 +31,7 @@ func NewBackendClient(pType types.PlatformType, conf config.BackendConfig) (Plat
 	case types.DefaultBackend:
 		// our default backend should be the service log but without the logrus
 		// formatting when messages are written.
-		return NewDefaultBackend(log.Service.Out)
+		return NewDefaultBackend(log.Daemon.Out)
 	default:
 		// we didn't get a recognized backend type
 		return nil, fmt.Errorf("could not establish a backend for address: %s", conf.Server)
