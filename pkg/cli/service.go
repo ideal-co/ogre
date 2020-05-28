@@ -16,6 +16,8 @@ func init() {
 	rootCmd.AddCommand(serviceCmd)
 }
 
+// serviceCmd is the command for interacting with the services managed by the
+// ogre daemon, such as docker (health checks).
 var serviceCmd = &cobra.Command{
 	Use:   "service",
 	Short: "Interface with ogre services",
@@ -35,6 +37,8 @@ well as control and configure them.`,
 	},
 }
 
+// serviceSubCmd is the sub-command of serviceCmd and allows a user to issue
+// start and stop commands to docker (health checks).
 var serviceSubCmd = &cobra.Command{
 	Use:   "docker",
 	Short: "Send a command to the ogre docker service",

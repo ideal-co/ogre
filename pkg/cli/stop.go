@@ -18,6 +18,8 @@ func init() {
 	rootCmd.AddCommand(stopCmd)
 }
 
+// stopCmd stops the ogred process and removes files associated with the running
+// proc such as the socket file descriptor and the PID file.
 var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stops the ogre daemon",

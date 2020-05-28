@@ -15,6 +15,7 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 }
 
+// startCmd starts the ogred process by way of executing the ogred binary
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts the ogre daemon",
