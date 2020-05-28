@@ -25,6 +25,8 @@ func (gm GenericMessage) Type() types.MessageType {
 	}
 }
 
+// Error is not currently used, reserved for future implementation. See other
+// message types for detail.
 func (gm GenericMessage) Error() error {
 	if gm.Err != nil {
 		return gm.Err
@@ -32,10 +34,19 @@ func (gm GenericMessage) Error() error {
 	return nil
 }
 
+// Serialize is the GenericMessage type implementation of the Message interface's
+// Serialize method. It returns a slice of bytes and an error, the latter will
+// be nil on successful serialization of the calling GenericMessage struct.
 func (gm GenericMessage) Serialize() ([]byte, error) {
 	return json.Marshal(gm)
 }
 
+// Deserialize is the GenericMessage type implementation of the Message interface's
+// Deserialize method. It returns a Message of the type which is indicated by the
+// MType field and can return the types found in the switch statement in the Type
+// method. An error is non-nil if the underlying message type's Deserialize method
+// results in an error, the data could not be unmarshaled into a GenericMessage, or
+// the MType passed was not supported/recognized.
 func (gm GenericMessage) Deserialize(data []byte) (Message, error) {
 	err := json.Unmarshal(data, &gm)
 	if err != nil {
