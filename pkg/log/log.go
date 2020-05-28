@@ -39,7 +39,6 @@ type Logger interface {
 
 // global log for the daemon
 var Daemon *logrus.Logger
-var Service *logrus.Logger
 
 // init sets up our loggers for our application. As the application expands, we
 // ideally want to be able to isolate logs and should make a logging mechanism
@@ -47,11 +46,6 @@ var Service *logrus.Logger
 func init() {
 	if Daemon == nil {
 		Daemon = newLogrusLogger(config.Daemon)
-	}
-	if Service == nil {
-		// TODO (lmower): determine how we want to handle individual service
-		//                configurgations passed in as a slice, or at all
-		Service = newLogrusLogger(config.Service)
 	}
 }
 

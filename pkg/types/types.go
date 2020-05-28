@@ -28,7 +28,6 @@ const (
 	DaemonMessage  MessageType = "daemon"
 	DockerMessage  MessageType = "docker"
 	BackendMessage MessageType = "backend"
-	HostMessage    MessageType = "host"
 )
 
 // ServiceType is a string which is used in the constants of this package to
@@ -38,7 +37,6 @@ const (
 type ServiceType string
 
 const (
-	CLI            ServiceType = "CLI"
 	DockerService  ServiceType = "docker"
 	BackendService ServiceType = "backend"
 )

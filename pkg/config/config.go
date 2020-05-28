@@ -44,13 +44,6 @@ var DefaultConfigConst = `
     "silent": false,
     "report_caller": false
   },
-  "backends": [
-    {
-      "type": "statsd",
-      "server": "127.0.0.1:8125",
-      "prefix": "foo-noodle"
-    }
-  ],
   "services": [
     {
       "type": "docker",
@@ -115,7 +108,6 @@ type ServiceConfig struct {
 
 // our application wide config values
 var Daemon = &venom.Venom{}
-var Service = &venom.Venom{}
 
 var DaemonConf = &DaemonConfig{}
 
@@ -146,9 +138,6 @@ func LoadConfig() {
 		panic(err)
 	}
 	Daemon = readConfig(install.HostConfigDir + install.OgredConfig)
-	// TODO (lmower): determine use case for separate service config
-	//                duplicating daemon config for now.
-	Service = readConfig(install.HostConfigDir + install.OgredConfig)
 }
 
 // LoadDefaults will parse the literal string above into the DaemonConfig
@@ -156,13 +145,11 @@ func LoadConfig() {
 func LoadDefaults() {
 	writeFromMemory()
 	Daemon = readConfig(install.HostConfigDir + install.OgredConfig)
-	// TODO (lmower): determine use case for separate service config
-	//                duplicating daemon config for now.
-	Service = readConfig(install.HostConfigDir + install.OgredConfig)
 }
 
+// writeFromMemory writes the literal string variable DefaultConfigConst to a
+// file and populates an in memory struct, DaemonConf.
 func writeFromMemory() {
-	//var conf = &DaemonConfig{}
 	if err := json.Unmarshal([]byte(DefaultConfigConst), DaemonConf); err != nil {
 		panic(err)
 	}
