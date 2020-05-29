@@ -127,7 +127,7 @@ Likewise, you can build the binaries yourself by executing the go build commands
 go build ./cmd/ogre
 go build ./cmd/ogred
 ```
-Note, that wherever you wind up placing the `ogred` binary, you make sure to
+Note that, wherever you wind up placing the `ogred` binary, you make sure to
 provide the additional configuration, as the application defaults to expect the
 bin in `/usr/local/bin/`.
 
@@ -135,14 +135,153 @@ bin in `/usr/local/bin/`.
 _coming soon..._
 
 ## Configuration
+Configuration is parsed every time the CLI is run. If a configuration file at
+`/etc/ogre/ogre.d/ogred.conf.json` does not exist, a default configuration will
+be written from source into memory and ultimately to disk at that location.
 
+Should the file already exist, that file will be used to inform the configuration
+of the application. The configuration must be in valid JSON and can be checked by
+running `ogre config list` which should panic if invalid and otherwise print:
+```
+ogre config list
+{
+    "dockerd_socket": "/run/docker.sock",
+    "containerd_socket": "/run/containerd/containerd.sock",
+    "ogred_socket": "/var/run/ogred.sock",
+    "ogred_pid": "/etc/ogre/ogred.pid",
+    "log": {
+        "level": "trace",
+        "file": "/var/log/ogred.log",
+        "silent": false,
+        "report_caller": false
+    }
+}
+```
+Below is a complete configuration file with all possible backends configured:
+```
+{
+    "dockerd_socket": "/run/docker.sock",
+    "containerd_socket": "/run/containerd/containerd.sock",
+    "ogred_socket": "/var/run/ogred.sock",
+    "ogred_pid": "/etc/ogre/ogred.pid",
+    "log": {
+        "level": "trace",
+        "file": "/var/log/ogred.log",
+        "silent": false,
+        "report_caller": false
+    },
+    "backends": [
+        {
+            "type": "statsd",
+            "server": "127.0.0.1:8125",
+            "prefix": "ogre"
+        },
+        {
+            "type": "prometheus",
+            "server": "127.0.0.1:9099",
+	        "metric": "east_coast_ogre_checks",
+            "resource_path": "/metrics"
+        },
+        {
+            "type": "http",
+            "server": "127.0.0.1:9009",
+            "format": "json",
+            "resource_path": "/health"
+        }
+    ]
+}
+``` 
+### Daemon Configuration
+The daemon is configured by the JSON block which is provided as the default: 
+```
+{
+    "dockerd_socket": "/run/docker.sock",
+    "ogred_socket": "/var/run/ogred.sock",
+    "ogred_pid": "/etc/ogre/ogred.pid",
+    "ogred_bin": "/usr/local/bin/"
+    "log": {
+        "level": "trace",
+        "file": "/var/log/ogred.log",
+        "silent": false,
+        "report_caller": false
+    }
+}
+```
+#### `dockerd_socket`
+- Default: `/run/docker.sock`
+- Desc: The location of the docker daemon unix socket
+- Required: `true`
+#### `ogred_socket`
+- Default: `/var/run/ogred.sock`
+- Desc: The location of the ogre daemon unix socket
+- Required: `false`
+#### `ogred_pid`
+- Default: `/etc/ogre/ogred.pid`
+- Desc: The location of the ogre daemon PID file
+- Required: `false`
+#### `ogred_bin`
+- Default: `/usr/local/bin/`
+- Desc: The location of the ogre daemon binary
+- Required: `false`
+#### `log`
+- Default: see log config section
+- Desc: The log configuration for the daemon
+- Required: `false`
 
-### Daemon
-_coming soon..._
-### Logs
-_coming soon..._
+### Log Configuration
+```
+"log": {
+    "level": "trace",
+    "file": "/var/log/ogred.log",
+    "silent": false,
+    "report_caller": false
+}
+```
+#### `level`
+- Values: `info`,`warn`,`error`,`trace`
+- Default: `info`
+- Desc: The log level by which to report/log information
+- Required: `true`
+#### `file`
+- Default: `/var/log/ogred.log`
+- Desc: The file where ogre application will log
+- Required: `true`
+#### `silent`
+- Values: `true`,`false`
+- Default: `false`
+- Desc: Indicate if all logging should be silent of not
+- Required: `false`
+#### `report_caller`
+- Values: `true`,`false`
+- Default: `false`
+- Desc: Report the log line and information about code exec
+- Required: `false`
+
 ### Backends
-_coming soon..._
+There are three supported backend types outside of the default log. All three
+require at minimum `server` and `type` configurations. All three can be used
+in unison, or the `backends` stanza can be omitted entirely. See below for detail.
+```
+"backends": [
+    {
+        "type": "statsd",
+        "server": "127.0.0.1:8125",
+        "prefix": "ogre"
+    },
+    {
+        "type": "prometheus",
+        "server": "127.0.0.1:9099",
+	    "metric": "east_coast_ogre_checks",
+        "resource_path": "/metrics"
+    },
+    {
+        "type": "http",
+        "server": "127.0.0.1:9009",
+        "format": "json",
+        "resource_path": "/health"
+    }
+]
+```
 
 ## Docker Health
 _coming soon..._
