@@ -26,6 +26,7 @@ will be returned to this command as well as the daemon log file.
 Note: ensure you have made any custom configurations before running start.'`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var ogredPIDFile string
+		var ogreBin string
 		// check if daemon is already running using possible config value
 		if ogrePID, ok := config.Daemon.Find(daemon.OgredPIDFile); ok {
 			ogredPIDFile = ogrePID.(string)
@@ -45,7 +46,11 @@ Note: ensure you have made any custom configurations before running start.'`,
 		argv := make([]string, len(args)+1)
 		var proc *os.Process
 
-		ogreBin := install.HostBinDir + install.OgredBin
+		if len(config.DaemonConf.OgredBin) != 0 {
+			ogreBin = config.DaemonConf.OgredBin + install.OgredBin
+		} else {
+			ogreBin = install.HostBinDir + install.OgredBin
+		}
 		argv[0] = ogreBin
 		proc, err := os.StartProcess(ogreBin, argv, new(os.ProcAttr))
 		if err != nil {
