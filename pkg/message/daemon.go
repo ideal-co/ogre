@@ -2,7 +2,7 @@ package msg
 
 import (
 	"encoding/json"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/types"
 )
 
 // DaemonMessage implements the msg.Message interface and is responsible

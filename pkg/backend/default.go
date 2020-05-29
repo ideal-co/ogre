@@ -1,8 +1,8 @@
 package backend
 
 import (
-	msg "github.com/lowellmower/ogre/pkg/message"
-	"github.com/lowellmower/ogre/pkg/types"
+	msg "github.com/ideal-co/ogre/pkg/message"
+	"github.com/ideal-co/ogre/pkg/types"
 	"io"
 )
 

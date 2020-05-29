@@ -2,9 +2,9 @@ package backend
 
 import (
 	"github.com/cactus/go-statsd-client/statsd"
-	"github.com/lowellmower/ogre/pkg/log"
-	msg "github.com/lowellmower/ogre/pkg/message"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/log"
+	msg "github.com/ideal-co/ogre/pkg/message"
+	"github.com/ideal-co/ogre/pkg/types"
 )
 
 // StatsdBackend implements the Platform interface and is responsible for the

@@ -1,7 +1,7 @@
 package daemon
 
 import (
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

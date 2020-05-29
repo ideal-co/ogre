@@ -1,4 +1,4 @@
-module github.com/lowellmower/ogre
+module github.com/ideal-co/ogre
 
 go 1.14
 

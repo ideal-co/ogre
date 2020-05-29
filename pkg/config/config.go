@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/lowellmower/ogre/pkg/install"
+	"github.com/ideal-co/ogre/pkg/install"
 	"github.com/moogar0880/venom"
 	"io/ioutil"
 	"os"

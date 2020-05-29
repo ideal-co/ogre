@@ -1,7 +1,7 @@
 package log
 
 import (
-	"github.com/lowellmower/ogre/pkg/config"
+	"github.com/ideal-co/ogre/pkg/config"
 	"github.com/moogar0880/venom"
 	"os"
 

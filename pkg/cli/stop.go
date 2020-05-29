@@ -2,8 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"github.com/lowellmower/ogre/pkg/config"
-	"github.com/lowellmower/ogre/pkg/daemon"
+	"github.com/ideal-co/ogre/pkg/config"
+	"github.com/ideal-co/ogre/pkg/daemon"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"

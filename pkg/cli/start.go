@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"github.com/lowellmower/ogre/pkg/config"
-	"github.com/lowellmower/ogre/pkg/daemon"
-	"github.com/lowellmower/ogre/pkg/install"
+	"github.com/ideal-co/ogre/pkg/config"
+	"github.com/ideal-co/ogre/pkg/daemon"
+	"github.com/ideal-co/ogre/pkg/install"
 	"github.com/spf13/cobra"
 	"os"
 	"strconv"
@@ -45,7 +45,7 @@ Note: ensure you have made any custom configurations before running start.'`,
 		argv := make([]string, len(args)+1)
 		var proc *os.Process
 
-		ogreBin := install.AppRoot + install.AppBinDir + install.OgredBin
+		ogreBin := install.HostBinDir + install.OgredBin
 		argv[0] = ogreBin
 		proc, err := os.StartProcess(ogreBin, argv, new(os.ProcAttr))
 		if err != nil {

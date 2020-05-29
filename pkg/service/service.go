@@ -3,8 +3,8 @@ package srvc
 import (
 	"context"
 	"fmt"
-	msg "github.com/lowellmower/ogre/pkg/message"
-	"github.com/lowellmower/ogre/pkg/types"
+	msg "github.com/ideal-co/ogre/pkg/message"
+	"github.com/ideal-co/ogre/pkg/types"
 )
 
 // Service is the interface which all services will implement.

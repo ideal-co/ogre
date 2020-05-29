@@ -2,8 +2,8 @@ package health
 
 import (
 	"context"
-	"github.com/lowellmower/ogre/pkg/log"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/log"
+	"github.com/ideal-co/ogre/pkg/types"
 	"os/exec"
 	"strings"
 	"sync"
@@ -50,10 +50,11 @@ type DockerFormatter struct {
 // ExecResult is the encapsulating struct used to capture the output from a command
 // run internal or external to a container.
 type ExecResult struct {
-	Hostname string
-	Exit     int
-	StdOut   string
-	StdErr   string
+	Container string
+	Hostname  string
+	Exit      int
+	StdOut    string
+	StdErr    string
 }
 
 // FormatOutput is the struct representation of the ogre.format.output.$ labels.

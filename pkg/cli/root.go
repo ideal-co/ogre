@@ -12,13 +12,8 @@ var rootCmd = &cobra.Command{
 	Use:   "ogre",
 	Short: "Container monitoring for modern distributed systems.",
 	Long: `Ogre provides a zero configuration service which can immediately be
-used to begin monitoring containers. It is designed for integration into modern
-day distibuted systems and the surrounding Docker eco-system.
-
-Ogre can be deployed on bare metal or in a container and will by default begin
-offering insight to the eco-system's health. Ogre is also configurable and can
-be integrated into roll-your-own solutions and other Docker services such as
-Kubernetes and Swarm.'`,
+used to begin monitoring container health. It is designed to integrate into modern
+day distributed systems and the surrounding eco-system.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//      Run: func(cmd *cobra.Command, args []string) { },

@@ -2,7 +2,7 @@
 
 ## Development Lead
 
-- Lowell Mower [lowellmower](https://github.com/lowellmower)
+- Lowell Mower [lowellmower](https://github.com/ideal-co)
 
 ## Contributors
 

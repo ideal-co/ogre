@@ -1,6 +1,6 @@
 package msg
 
-import "github.com/lowellmower/ogre/pkg/types"
+import "github.com/ideal-co/ogre/pkg/types"
 
 // Message is the interface by which all processes communicate within the ogre
 // application
