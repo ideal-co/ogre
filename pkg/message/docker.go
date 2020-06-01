@@ -3,8 +3,8 @@ package msg
 import (
 	"encoding/json"
 	"github.com/docker/docker/api/types/events"
-	"github.com/lowellmower/ogre/pkg/health"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/health"
+	"github.com/ideal-co/ogre/pkg/types"
 )
 
 // DockerMessage implements the Message interface and is used to negotiate

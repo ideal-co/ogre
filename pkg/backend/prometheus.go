@@ -1,9 +1,9 @@
 package backend
 
 import (
-	"github.com/lowellmower/ogre/pkg/log"
-	msg "github.com/lowellmower/ogre/pkg/message"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/log"
+	msg "github.com/ideal-co/ogre/pkg/message"
+	"github.com/ideal-co/ogre/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"

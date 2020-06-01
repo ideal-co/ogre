@@ -2,8 +2,8 @@ package msg
 
 import (
 	"encoding/json"
-	"github.com/lowellmower/ogre/pkg/health"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/health"
+	"github.com/ideal-co/ogre/pkg/types"
 )
 
 // BackendMessage implements the Message interface and is the type responsible

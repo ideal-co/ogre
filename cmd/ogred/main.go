@@ -1,6 +1,6 @@
 package main
 
-import "github.com/lowellmower/ogre/pkg/daemon"
+import "github.com/ideal-co/ogre/pkg/daemon"
 
 func main() {
 	daemon.Run()

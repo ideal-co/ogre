@@ -3,7 +3,7 @@ package msg
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/types"
 )
 
 type GenericMessage struct {

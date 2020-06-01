@@ -1,5 +1,5 @@
 # Ogre
-<img align="right" width="300" height="300" src=https://github.com/lowellmower/ogre-assets/blob/master/images/ogre-green-300.png>
+<img align="right" width="300" height="300" src=https://github.com/ideal-co/ogre-assets/blob/master/images/ogre-green-300.png>
 Simplified health monitoring and telemetry for Docker containers in modern day
 distributed systems.
 

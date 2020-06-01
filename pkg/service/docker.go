@@ -8,10 +8,10 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/lowellmower/ogre/pkg/health"
-	"github.com/lowellmower/ogre/pkg/log"
-	msg "github.com/lowellmower/ogre/pkg/message"
-	internalTypes "github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/health"
+	"github.com/ideal-co/ogre/pkg/log"
+	msg "github.com/ideal-co/ogre/pkg/message"
+	internalTypes "github.com/ideal-co/ogre/pkg/types"
 	"io/ioutil"
 	"os/exec"
 	"time"
@@ -356,7 +356,8 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 					continue
 				}
 				log.Daemon.WithField("service", internalTypes.DockerService).Tracef("EXTERN CHECK: %+v", chk)
-				result.Hostname = c.Name
+				result.Container = c.Name
+				result.Hostname = c.Info.Config.Hostname
 				chk.Result = result
 				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target, result)
 			} else {
@@ -365,7 +366,8 @@ func (ds *DockerService) startCheckLoop(c *Container, chk *health.DockerHealthCh
 					log.Daemon.WithField("service", internalTypes.DockerService).Errorf("check %s could not be run: %s", chk.Name, err)
 					continue
 				}
-				result.Hostname = c.Name
+				result.Container = c.Name
+				result.Hostname = c.Info.Config.Hostname
 				chk.Result = result
 				ds.out <- msg.NewBackendMessage(chk, chk.Formatter.Platform.Target, result)
 			}

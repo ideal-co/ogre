@@ -2,7 +2,7 @@ package cli
 
 import (
 	"fmt"
-	"github.com/lowellmower/ogre/pkg/version"
+	"github.com/ideal-co/ogre/pkg/version"
 	"github.com/spf13/cobra"
 )
 

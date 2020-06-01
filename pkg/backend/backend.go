@@ -2,10 +2,10 @@ package backend
 
 import (
 	"fmt"
-	"github.com/lowellmower/ogre/pkg/config"
-	"github.com/lowellmower/ogre/pkg/log"
-	msg "github.com/lowellmower/ogre/pkg/message"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/config"
+	"github.com/ideal-co/ogre/pkg/log"
+	msg "github.com/ideal-co/ogre/pkg/message"
+	"github.com/ideal-co/ogre/pkg/types"
 )
 
 type Platform interface {

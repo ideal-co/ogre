@@ -3,7 +3,7 @@ package health
 import (
 	"context"
 	"github.com/docker/docker/pkg/testutil/assert"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/types"
 	"testing"
 	"time"
 )

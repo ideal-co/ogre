@@ -21,40 +21,267 @@ math: true
 ---
 
 ## Overview
-Ogre is a CLI and Daemon which delivers out of the box container monitoring by
-means of health checks and other telemetry. Ogre can be installed as a binary
-on the host, or deployed using Docker on an image of your choice or by using
-our public ogre Docker image.
+#### What Ogre Is...
+Ogre is a CLI and daemon delivering out of the box container monitoring by way
+of docker label defined health checks. Ogre can be installed as a binary on the
+host, or deployed using the public Docker image.
 
-Ogre helps developers of modern distributed applications gather valuable
-telemetry quickly and easily. There are no doubt more robust systems for any
-single aspect ogre provides, however, ogre's goal is not to provide any single
-functionality with depth. Rather, ogre seeks to provide basic telemetry for a
-modern day distributed micro service deployed using Docker, which is often a
-critical blocker for early adoption of a service.
+Ogre enables developers to quickly integrate a new or existing service with
+existing reporting infrastructure without having to manage multiple configurations
+and bespoke reporting implementations. Ogre makes it simple to report application
+health by consolidating the collection and reporting mechanisms, leaving only
+the responsibility of the health check definition to the developer.
+
+Ogre currently integrates with the following reporting mechanisms:
+- Prometheus
+- Statsd
+- Generic HTTP server (webhook)
+- Logs  
+
+#### What Ogre Is Not...
+Ogre is not a stand-alone reporting tool, it is designed to integrate with popular
+and custom solutions.
+
+Ogre is not a process/container manager. No action is taken outside of sending
+health check results to existing infrastructure.
+
+Ogre is not (currently) a tool for reporting resource footprints or other pieces
+of telemetry outside of container health checks, though it is possible this may
+be the way the project heads.  
 
 ## Quick Start
-_coming soon..._
+#### Requirements
+- Docker `> 1.9`
+- User perms to CRUD files/dir under `/etc/` and `/var/`
+#### Deploying on a host
+For the CLI and daemon, you can clone and build yourself if you choose...
+```
+# clone the repo
+https://github.com/ideal-co/ogre.git
+cd ogre
+
+# build the binaries
+make build
+
+# ensure the install was successful
+ogre version
+
+# start the daemon
+ogre start
+```
+Now you'll want to provide a label on your services container, indicating what
+the health check should be. (`-l` is the label flag)
+```
+docker run -dit --name foo-noodle                     \
+-l ogre.health.ping.outside='ping -c 1 -W 1 8.8.8.8'  \
+alpine:latest
+```
+By default, Ogre will log the check as JSON to `/var/log/ogred.log` if no
+backend configuration is provided otherwise. The default interval at which
+checks are run is `5s`.
+```
+tail -n 1 /var/log/ogred.log | jq .
+{
+  "CompletedCheck": null,
+  "Destination": "",
+  "Data": {
+    "Container": "/foo-noodle",
+    "Hostname": "daae3a5a717f",
+    "Exit": 0,
+    "StdOut": "PING 8.8.8.8 (8.8.8.8): 56 data bytes\n64 bytes from 8.8.8.8: seq=0 ttl=37 time=23.473 ms\n\n--- 8.8.8.8 ping statistics ---\n1 packets transmitted, 1 packets received, 0% packet loss\nround-trip min/avg/max = 23.473/23.473/23.473 ms\n",
+    "StdErr": ""
+  },
+  "Err": null
+}
+```
+The same `docker run` command could be given another label to indicate that this
+health check should only be run every `1m` versus the default `5s`.
+```
+docker run -dit --name foo-noodle                     \
+-l ogre.health.ping.outside='ping -c 1 -W 1 8.8.8.8'  \
+-l ogre.format.health.interval='1m'                   \
+alpine:latest
+```
+Multiple, more complex checks can be passed. These could also be part of your
+`Dockerfile` or `docker-compose.yml` file, they do not need to be flags. 
+```
+docker run -dit --name rev-prox \
+-l ogre.health.in.https.open="nmap --host-timeout 1s -p 443 127.0.0.1 | grep -i closed | wc -l | awk '{$1=$1;exit $1}'"  \
+-l ogre.health.ex.dns.connect="nmap --host-timeout 1s -p 53 8.8.8.8 | grep -i closed | wc -l | awk '{$1=$1;exit $1}'"    \
+-l ogre.health.service.check.script="./usr/local/bin/your_health_check_script.sh"                                        \
+your_nginx_img:latest 
+``` 
+#### Running Ogre in a Container
+... TODO ... 
 
 ## Building Ogre
-_coming soon..._
+If you're building from source, clone the repo and use the Makefile target
+which will result in the `ogre` and `ogred` binary in `/usr/bin/local/`. This
+will require you have Go version `1.14.2` or greater installed. Older Go versions
+will most likely work but cannot be guaranteed.
+```
+make build
+```
+Likewise, you can build the binaries yourself by executing the go build commands:
+```
+go build ./cmd/ogre
+go build ./cmd/ogred
+```
+Note that, wherever you wind up placing the `ogred` binary, you make sure to
+provide the additional configuration, as the application defaults to expect the
+bin in `/usr/local/bin/`.
 
 ## Using Public Docker Image
 _coming soon..._
 
 ## Configuration
-_coming soon..._
-### Daemon
-_coming soon..._
-### Logs
-_coming soon..._
-### Docker
-_coming soon..._
-### Backend
-_coming soon..._
+Configuration is parsed every time the CLI is run. If a configuration file at
+`/etc/ogre/ogre.d/ogred.conf.json` does not exist, a default configuration will
+be written from source into memory and ultimately to disk at that location.
 
-## The Daemon
-_coming soon..._
+Should the file already exist, that file will be used to inform the configuration
+of the application. The configuration must be in valid JSON and can be checked by
+running `ogre config list` which should panic if invalid and otherwise print:
+```
+ogre config list
+{
+    "dockerd_socket": "/run/docker.sock",
+    "containerd_socket": "/run/containerd/containerd.sock",
+    "ogred_socket": "/var/run/ogred.sock",
+    "ogred_pid": "/etc/ogre/ogred.pid",
+    "log": {
+        "level": "trace",
+        "file": "/var/log/ogred.log",
+        "silent": false,
+        "report_caller": false
+    }
+}
+```
+Below is a complete configuration file with all possible backends configured:
+```
+{
+    "dockerd_socket": "/run/docker.sock",
+    "containerd_socket": "/run/containerd/containerd.sock",
+    "ogred_socket": "/var/run/ogred.sock",
+    "ogred_pid": "/etc/ogre/ogred.pid",
+    "log": {
+        "level": "trace",
+        "file": "/var/log/ogred.log",
+        "silent": false,
+        "report_caller": false
+    },
+    "backends": [
+        {
+            "type": "statsd",
+            "server": "127.0.0.1:8125",
+            "prefix": "ogre"
+        },
+        {
+            "type": "prometheus",
+            "server": "127.0.0.1:9099",
+	        "metric": "east_coast_ogre_checks",
+            "resource_path": "/metrics"
+        },
+        {
+            "type": "http",
+            "server": "127.0.0.1:9009",
+            "format": "json",
+            "resource_path": "/health"
+        }
+    ]
+}
+``` 
+### Daemon Configuration
+The daemon is configured by the JSON block which is provided as the default: 
+```
+{
+    "dockerd_socket": "/run/docker.sock",
+    "ogred_socket": "/var/run/ogred.sock",
+    "ogred_pid": "/etc/ogre/ogred.pid",
+    "ogred_bin": "/usr/local/bin/"
+    "log": {
+        "level": "trace",
+        "file": "/var/log/ogred.log",
+        "silent": false,
+        "report_caller": false
+    }
+}
+```
+#### `dockerd_socket`
+- Default: `/run/docker.sock`
+- Desc: The location of the docker daemon unix socket
+- Required: `true`
+#### `ogred_socket`
+- Default: `/var/run/ogred.sock`
+- Desc: The location of the ogre daemon unix socket
+- Required: `false`
+#### `ogred_pid`
+- Default: `/etc/ogre/ogred.pid`
+- Desc: The location of the ogre daemon PID file
+- Required: `false`
+#### `ogred_bin`
+- Default: `/usr/local/bin/`
+- Desc: The location of the ogre daemon binary
+- Required: `false`
+#### `log`
+- Default: see log config section
+- Desc: The log configuration for the daemon
+- Required: `false`
+
+### Log Configuration
+```
+"log": {
+    "level": "trace",
+    "file": "/var/log/ogred.log",
+    "silent": false,
+    "report_caller": false
+}
+```
+#### `level`
+- Values: `info`,`warn`,`error`,`trace`
+- Default: `info`
+- Desc: The log level by which to report/log information
+- Required: `true`
+#### `file`
+- Default: `/var/log/ogred.log`
+- Desc: The file where ogre application will log
+- Required: `true`
+#### `silent`
+- Values: `true`,`false`
+- Default: `false`
+- Desc: Indicate if all logging should be silent of not
+- Required: `false`
+#### `report_caller`
+- Values: `true`,`false`
+- Default: `false`
+- Desc: Report the log line and information about code exec
+- Required: `false`
+
+### Backends
+There are three supported backend types outside of the default log. All three
+require at minimum `server` and `type` configurations. All three can be used
+in unison, or the `backends` stanza can be omitted entirely. See below for detail.
+```
+"backends": [
+    {
+        "type": "statsd",
+        "server": "127.0.0.1:8125",
+        "prefix": "ogre"
+    },
+    {
+        "type": "prometheus",
+        "server": "127.0.0.1:9099",
+	    "metric": "east_coast_ogre_checks",
+        "resource_path": "/metrics"
+    },
+    {
+        "type": "http",
+        "server": "127.0.0.1:9009",
+        "format": "json",
+        "resource_path": "/health"
+    }
+]
+```
 
 ## Docker Health
 _coming soon..._

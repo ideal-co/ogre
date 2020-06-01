@@ -3,8 +3,8 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lowellmower/ogre/pkg/config"
-	"github.com/lowellmower/ogre/pkg/install"
+	"github.com/ideal-co/ogre/pkg/config"
+	"github.com/ideal-co/ogre/pkg/install"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"

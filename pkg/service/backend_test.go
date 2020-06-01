@@ -2,10 +2,10 @@ package srvc
 
 import (
 	"context"
-	"github.com/lowellmower/ogre/pkg/backend"
-	"github.com/lowellmower/ogre/pkg/health"
-	msg "github.com/lowellmower/ogre/pkg/message"
-	"github.com/lowellmower/ogre/pkg/types"
+	"github.com/ideal-co/ogre/pkg/backend"
+	"github.com/ideal-co/ogre/pkg/health"
+	msg "github.com/ideal-co/ogre/pkg/message"
+	"github.com/ideal-co/ogre/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

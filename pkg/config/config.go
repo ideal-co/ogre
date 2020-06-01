@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/lowellmower/ogre/pkg/install"
+	"github.com/ideal-co/ogre/pkg/install"
 	"github.com/moogar0880/venom"
 	"io/ioutil"
 	"os"
@@ -29,6 +29,17 @@ NOTE: the backend config stanza
       "format": "json",
       "resource_path": "/health"
     }
+  ],
+  "services": [
+    {
+      "type": "docker",
+      "log": {
+        "level": "info",
+        "file": "/var/log/service.log",
+        "silent": false,
+        "report_caller": false
+      }
+    }
   ]
 */
 
@@ -43,18 +54,7 @@ var DefaultConfigConst = `
     "file": "/var/log/ogred.log",
     "silent": false,
     "report_caller": false
-  },
-  "services": [
-    {
-      "type": "docker",
-      "log": {
-        "level": "info",
-        "file": "/var/log/service.log",
-        "silent": false,
-        "report_caller": false
-      }
-    }
-  ]
+  }
 }
 `
 
@@ -64,6 +64,7 @@ type DaemonConfig struct {
 	ContainerdSocket string          `json:"containerd_socket,omitempty"`
 	OgredSocket      string          `json:"ogred_socket"`
 	OgredPID         string          `json:"ogred_pid"`
+	OgredBin         string          `json:"ogred_bin,omitempty"`
 	Log              LogConfig       `json:"log"`
 	Backends         []BackendConfig `json:"backends,omitempty"`
 	Services         []ServiceConfig `json:"services,omitempty"`
