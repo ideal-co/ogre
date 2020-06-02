@@ -1,3 +1,4 @@
+[![CircleCI](https://circleci.com/gh/ideal-co/ogre.svg?style=svg)](https://circleci.com/gh/ideal-co/ogre)
 # Ogre
 <img align="right" width="300" height="300" src=https://github.com/ideal-co/ogre-assets/blob/master/images/ogre-green-300.png>
 Simplified health monitoring and telemetry for Docker containers in modern day
