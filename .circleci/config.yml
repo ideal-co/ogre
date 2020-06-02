@@ -22,4 +22,4 @@ jobs:
       - checkout
       - run:
           name: Ogre unit tests
-          command: make test
+          command: go test -v ./...
