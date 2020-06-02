@@ -1,0 +1,36 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version
+      - image: golang:1.14-buster
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/postgres:9.4
+
+    environment: # environment variables for the build itself
+      TEST_RESULTS: /tmp/test-results # path to where test results will be saved
+
+    #### TEMPLATE_NOTE: go expects specific checkout path representing url
+    #### expecting it in the form of
+    ####   /go/src/github.com/circleci/go-tool
+    working_directory: /go/src/github.com/ideal-co/ogre
+    steps:
+      - checkout
+      - run: mkdir -p /tmp/test-results # create the test results directory
+      - run: go get github.com/jstemmer/go-junit-report
+      - run:
+          name: Ogre unit tests
+          command: |
+            trap "go-junit-report </tmp/test-results/go-test.out > /tmp/test-results/go-test-report.xml" EXIT
+            make test | tee /tmp/test-results/go-test.out
+
+      - store_test_results:
+          path: /tmp/test-results
+#      - store_artifacts:
+#          path: /tmp/test-results
