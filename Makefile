@@ -26,11 +26,9 @@ help:
 	@echo
 
 build:
+	@echo "Building commit: ${GIT_COMMIT}"
+	@go build -ldflags "-X github.com/ideal-co/ogre/pkg/version.GitCommit=${GIT_COMMIT} -X github.com/ideal-co/ogre/pkg/version.BuildDate=${BUILD_DATE}" ./cmd/ogre/
 	@go build ./cmd/ogred/
-	@go build ./cmd/ogre/
-	@cp ogre /usr/local/bin/
-	@cp ogred /usr/local/bin/
-	@rm ogre ogred
 
 build-alpine:
 	@echo "building ${BIN_NAME} ${VERSION}"
