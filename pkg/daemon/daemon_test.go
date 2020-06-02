@@ -26,10 +26,8 @@ func TestDaemon_collectServices(t *testing.T) {
 
 	for _, io := range testIO {
 		t.Run(io.name, func(t *testing.T) {
-			d := io.test(io.inp)
-			for _, s := range io.srvcs {
-				assert.NotNil(t, d.services[s], "was expecting service %s", s)
-			}
+			io.test(io.inp)
+			assert.Len(t, io.inp.services, len(io.srvcs), "was expecting two services")
 		})
 	}
 }
