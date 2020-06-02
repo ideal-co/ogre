@@ -22,7 +22,7 @@ jobs:
     steps:
       - checkout
 
-      - run: sudo mkdir /etc/ogre
+      - run: sudo mkdir -p /etc/ogre/ogre.d
 
       - run:
           name: Ogre unit tests
