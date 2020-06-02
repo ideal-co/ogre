@@ -21,6 +21,8 @@ jobs:
     steps:
       - checkout
 
+      - run: mkdir /etc/ogre
+
       - run:
           name: Ogre unit tests
           command: make test
