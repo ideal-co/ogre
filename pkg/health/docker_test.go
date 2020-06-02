@@ -103,12 +103,30 @@ func TestNewDockerHealthCheck(t *testing.T) {
 	for _, io := range testIO {
 		t.Run(io.name, func(t *testing.T) {
 			dhc := NewDockerHealthCheck(io.in)
-			for idx, hc := range dhc {
-				assert.Equal(t, hc.Name, io.exp[idx].Name)
-				assert.Equal(t, hc.Cmd.String(), io.exp[idx].Cmd.String())
-				assert.DeepEqual(t, hc.RawCmd, io.exp[idx].RawCmd)
-				assert.Equal(t, hc.Interval, io.exp[idx].Interval)
-				assert.DeepEqual(t, hc.Formatter, io.exp[idx].Formatter)
+			// we cannot guarantee the order of the slice so for multiple we'll
+			// just ensure the values are not nil for now
+			chkMap := map[string]*DockerHealthCheck{}
+			if len(dhc) > 1 {
+				for _, exp := range io.exp {
+					chkMap[exp.Name] = exp
+				}
+				for _, hc := range dhc {
+					exp, ok := chkMap[hc.Name]
+					assert.Equal(t, ok, true)
+					assert.Equal(t, hc.Name, exp.Name)
+					assert.Equal(t, hc.Cmd.String(), exp.Cmd.String())
+					assert.DeepEqual(t, hc.RawCmd, exp.RawCmd)
+					assert.Equal(t, hc.Interval, exp.Interval)
+					assert.DeepEqual(t, hc.Formatter, exp.Formatter)
+				}
+			} else {
+				for idx, hc := range dhc {
+					assert.Equal(t, hc.Name, io.exp[idx].Name)
+					assert.Equal(t, hc.Cmd.String(), io.exp[idx].Cmd.String())
+					assert.DeepEqual(t, hc.RawCmd, io.exp[idx].RawCmd)
+					assert.Equal(t, hc.Interval, io.exp[idx].Interval)
+					assert.DeepEqual(t, hc.Formatter, io.exp[idx].Formatter)
+				}
 			}
 		})
 	}
