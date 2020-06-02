@@ -12,7 +12,7 @@ var GitCommit string
 const Version = "0.1.0"
 
 // BuildDate returns the date the binary was built
-var BuildDate = ""
+var BuildDate string
 
 // GoVersion returns the version of the go runtime used to compile the binary
 var GoVersion = runtime.Version()
