@@ -3,7 +3,7 @@
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
-  build:
+  test:
     docker:
       # specify the version
       - image: golang:1.14-buster
@@ -19,7 +19,6 @@ jobs:
     #### TEMPLATE_NOTE: go expects specific checkout path representing url
     #### expecting it in the form of
     ####   /go/src/github.com/circleci/go-tool
-    ####   /go/src/bitbucket.org/circleci/go-tool
     working_directory: /go/src/github.com/ideal-co/ogre
     steps:
       - checkout
@@ -31,5 +30,7 @@ jobs:
             trap "go-junit-report </tmp/test-results/go-test.out > /tmp/test-results/go-test-report.xml" EXIT
             make test | tee /tmp/test-results/go-test.out
 
-      - store_artifacts:
+      - store_test_results:
           path: /tmp/test-results
+#      - store_artifacts:
+#          path: /tmp/test-results
