@@ -4,11 +4,17 @@ Simplified health monitoring and telemetry for Docker containers in modern day
 distributed systems.
 
 ## Getting Started
+- See [quick start section](https://lowellmower.com/1/01/ogre-doc/#quick-start) of the documentation.
+- [Getting started with statsd](). (coming soon...)
+- [Getting started with a generic HTTP backend](). (coming soon...)
+- [Getting started with prometheus](). (coming soon...)
+
+## Building Ogre
 
 Ensure you have Go installed. Running Ogre then should be as simple as:
 ```console
 $ make build
-$ ./bin/ogre
+$ ./ogre version
 ```
 
 ### Testing
