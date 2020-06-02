@@ -32,4 +32,4 @@ jobs:
             make test | tee ${TEST_RESULTS}/go-test.out
 
       - store_artifacts:
-          path: ${TEST_RESULTS}/go-test.out
+          path: $TEST_RESULTS/go-test.out
