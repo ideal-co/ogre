@@ -21,9 +21,6 @@ jobs:
     working_directory: /go/src/github.com/ideal-co/ogre
     steps:
       - checkout
-
-      - run: sudo mkdir -p /etc/ogre/ogre.d
-
       - run:
           name: Ogre unit tests
           command: sudo make test
