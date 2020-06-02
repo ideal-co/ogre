@@ -4,7 +4,7 @@
 version: 2
 jobs:
   build:
-    macine:
+    machine:
       - image: ubuntu-1604:202004-01
 
     #docker:
@@ -29,6 +29,7 @@ jobs:
     steps:
       - checkout
       - run: mkdir -p $TEST_RESULTS # create the test results directory
+      - run: mkdir -p /etc/ogred/ogre.d && cp configs/ogre.d/ogred.conf.json /etc/ogred/ogre.d/
       - run: wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.14.linux-amd64.tar.gz
       - run: go get github.com/jstemmer/go-junit-report
       - run: go mod vendor

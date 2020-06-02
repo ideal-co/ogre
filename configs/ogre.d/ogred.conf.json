@@ -1,5 +1,5 @@
 {
-  "dockerd_socket": "/run/docker.sock",
+  "dockerd_socket": "/var/run/docker.sock",
   "containerd_socket": "/run/containerd/containerd.sock",
   "ogred_socket": "/var/run/ogred.sock",
   "ogred_pid": "/etc/ogre/ogred.pid",
@@ -9,13 +9,6 @@
     "silent": false,
     "report_caller": false
   },
-  "backends": [
-    {
-      "type": "statsd",
-      "server": "127.0.0.1:8125",
-      "prefix": "ogre"
-    }
-  ],
   "services": [
     {
       "type": "docker",
