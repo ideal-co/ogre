@@ -23,13 +23,13 @@ jobs:
     working_directory: /go/src/github.com/ideal-co/ogre
     steps:
       - checkout
-      - run: mkdir -p $TEST_RESULTS # create the test results directory
+      - run: mkdir -p /tmp/test-results # create the test results directory
       - run: go get github.com/jstemmer/go-junit-report
       - run:
           name: Ogre unit tests
           command: |
-            trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
-            make test | tee ${TEST_RESULTS}/go-test.out
+            trap "go-junit-report </tmp/test-results/go-test.out > /tmp/test-results/go-test-report.xml" EXIT
+            make test | tee /tmp/test-results/go-test.out
 
       - store_artifacts:
-          path: $TEST_RESULTS/go-test.out
+          path: /tmp/test-results/go-test.out
