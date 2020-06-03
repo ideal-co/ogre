@@ -9,8 +9,7 @@ VERSION := $(shell grep "const Version " pkg/version/version.go | sed -E 's/.*"(
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 BUILD_DATE=$(shell date '+%Y-%m-%d-%H:%M:%S')
-IMAGE_NAME := "ideal-co/ogre"
-BIN_PATH :=
+IMAGE_NAME := "idealco/ogre"
 
 help:
 	@echo 'Management commands for ogre:'
@@ -56,4 +55,4 @@ clean:
 	@test ! -e bin/${BIN_NAME} || rm bin/${BIN_NAME}
 
 test:
-	go test -v ./...
+	@go test -v ./...
