@@ -7,6 +7,7 @@ import (
 	"github.com/ideal-co/ogre/pkg/install"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -47,9 +48,9 @@ Note: ensure you have made any custom configurations before running start.'`,
 		var proc *os.Process
 
 		if len(config.DaemonConf.OgredBin) != 0 {
-			ogreBin = config.DaemonConf.OgredBin + install.OgredBin
+			ogreBin = filepath.Join(config.DaemonConf.OgredBin, install.OgredBin)
 		} else {
-			ogreBin = install.HostBinDir + install.OgredBin
+			ogreBin = filepath.Join(install.HostBinDir, install.OgredBin)
 		}
 		argv[0] = ogreBin
 		proc, err := os.StartProcess(ogreBin, argv, new(os.ProcAttr))
