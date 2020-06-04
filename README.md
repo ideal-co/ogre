@@ -6,7 +6,7 @@ Simplified health monitoring and telemetry for Docker containers in modern day
 distributed systems.
 
 ## Note:
-This project is currently in *Beta* and is *not* production ready. Please use at
+This project is currently in **Beta** and is **not** production ready. Please use at
 will but with that understanding. We are aiming for end of June for a hardened
 release which will be version `1.0.0`.
 
@@ -24,7 +24,7 @@ the feedback is valuable and appreciated.
 Ensure you have Go installed. Running Ogre then should be as simple as:
 ```console
 $ make build install
-$ ./ogre version
+$ ogre version
 ```
 
 ### Testing
