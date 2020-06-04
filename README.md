@@ -5,6 +5,14 @@
 Simplified health monitoring and telemetry for Docker containers in modern day
 distributed systems.
 
+## Note:
+This project is currently in *Beta* and is *not* production ready. Please use at
+will but with that understanding. We are aiming for end of June for a hardened
+release which will be version `1.0.0`.
+
+Please open issues for bugs, breaks, panics, code reviews, and puppy pictures...
+the feedback is valuable and appreciated.
+
 ## Getting Started
 - See [quick start section](https://lowellmower.com/1/01/ogre-doc/#quick-start) of the documentation.
 - [Getting started with statsd](https://youtu.be/MjhH5YD570U)
