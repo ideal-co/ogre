@@ -15,7 +15,7 @@ distributed systems.
 
 Ensure you have Go installed. Running Ogre then should be as simple as:
 ```console
-$ make build
+$ make build install
 $ ./ogre version
 ```
 
