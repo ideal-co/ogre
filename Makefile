@@ -9,6 +9,7 @@ VERSION := $(shell grep "const Version " pkg/version/version.go | sed -E 's/.*"(
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 BUILD_DATE=$(shell date '+%Y-%m-%d-%H:%M:%S')
+OGRE_EXEC_PATH ?= "/usr/local/bin"
 IMAGE_NAME := "idealco/ogre"
 
 help:
@@ -34,6 +35,10 @@ build-alpine:
 	@echo "GOPATH=${GOPATH}"
 	go build -ldflags '-w -linkmode external -extldflags "-static" -X github.com/ideal-co/ogre/pkg/version/version.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X github.com/ideal-co/ogre/pkg/version/version.BuildDate=${BUILD_DATE}' -o bin/${BIN_NAME} ./cmd/ogre/
 	go build -o ./bin/ ./cmd/ogred/
+
+install:
+	@mv ogre $OGRE_EXEC_PATH
+	@mv ogred $OGRE_EXEC_PATH
 
 package:
 	@echo "building image ${BIN_NAME} ${VERSION} $(GIT_COMMIT)"

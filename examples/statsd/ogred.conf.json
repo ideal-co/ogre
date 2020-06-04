@@ -1,0 +1,19 @@
+{
+    "dockerd_socket": "/run/docker.sock",
+    "ogred_socket": "/var/run/ogred.sock",
+    "ogred_pid": "/etc/ogre/ogred.pid",
+    "ogred_bin": "/etc/ogre/",
+    "log": {
+        "level": "trace",
+        "file": "/var/log/ogred.log",
+        "silent": false,
+        "report_caller": false
+    },
+    "backends": [
+        {
+            "type": "statsd",
+            "server": "127.0.0.1:8125",
+            "prefix": "ogre"
+        }
+    ]
+}
