@@ -9,7 +9,7 @@ VERSION := $(shell grep "const Version " pkg/version/version.go | sed -E 's/.*"(
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 BUILD_DATE=$(shell date '+%Y-%m-%d-%H:%M:%S')
-OGRE_EXEC_PATH := "/usr/local/bin"
+OGRE_EXEC_PATH ?= "/usr/local/bin"
 IMAGE_NAME := "idealco/ogre"
 
 help:
@@ -37,8 +37,8 @@ build-alpine:
 	go build -o ./bin/ ./cmd/ogred/
 
 install:
-	@mv ogre $OGRE_EXEC_PATH
-	@mv ogred $OGRE_EXEC_PATH
+	@mv ogre ${OGRE_EXEC_PATH}
+	@mv ogred ${OGRE_EXEC_PATH}
 
 package:
 	@echo "building image ${BIN_NAME} ${VERSION} $(GIT_COMMIT)"
